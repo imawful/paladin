@@ -16,6 +16,10 @@ public class MyGame extends Game
     @Override
     public void create()
     {
+        // map width : 28
+        // map height: 31
+        // tile units 20x20
+        
         batch = new SpriteBatch();
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 320, 180);
