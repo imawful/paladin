@@ -61,8 +61,12 @@ public class Pac extends Entity {
      */
     if (canTurn(0.1f)) {
       snap();
-      checkPosition(delta);
+      vel.set(calcVelocity(delta));
     }
+
+    //if next position doens't land us into a maze wall
+    //we advance. the next position is just our current position
+    //with the added velocity that we calculated.
     Vector2 nextPos = pos.cpy().add(vel.cpy().scl(delta));
     if (!collidesWithWall(nextPos)) pos.set(nextPos);
     else {
@@ -90,17 +94,23 @@ public class Pac extends Entity {
    * of nextPos and update velocity accordingly.
    *
    * -- if player will collide with a wall on next direction
-   *    the velocity is left alone.
+   *    the prev/current? velocity is returned.
+   *
+   * @param delta used to scale the movement applied to our position.
+   * @return Vector2 the new velocity if we direction changes else the current velocity is returned.
    */
-  private void checkPosition(float delta) {
+  private Vector2 calcVelocity(float delta) {
     Vector2 newVelocity = nextPos.cpy().nor().scl(speed);
     Vector2 nPos = pos.cpy().add(newVelocity.cpy().scl(delta));
-    if (!collidesWithWall(nPos)) vel.set(newVelocity);
+    if (!collidesWithWall(nPos)) return newVelocity;
+    else return vel.cpy();
   }
 
   /**
    * Gets the current speed of Pac.
    * speed is represented in pixels per second.
+   *
+   * @return float, pac's speed in pixels per second.
    */
   public float getSpeed() {
     return this.speed;
