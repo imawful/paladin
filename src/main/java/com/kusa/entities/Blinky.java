@@ -9,22 +9,27 @@ import java.util.Map;
 public class Blinky extends Entity {
 
   /**
-   * Speed in pixels per second.
+   * Position of scatter mode's target for blinky.
    */
-  private float speed;
+  public static final Vector2 SCATTER_TILE = new Vector2(25f, 30f - (-3f));
 
   /**
-   * Position of the target tile in scatter mode.
+   * Current target tile.
    */
-  private final Vector2 scatterTarget;
+  private Vector2 target;
 
   /**
-   * Constructs a blinky entity with an x, y.
+   * Constructs a blinky entity with an x, y, and speed.
+   *
+   * default speed if not provided is 7.5f
    */
   public Blinky(float x, float y) {
-    super(x, y);
-    scatterTarget = new Vector2(25f, 30f - (-3f));
-    speed = 7.5f;
+    this(x, y, 7.5f);
+  }
+
+  public Blinky(float x, float y, float speed) {
+    super(x, y, speed);
+    target = SCATTER_TILE;
   }
 
   /**
@@ -45,7 +50,7 @@ public class Blinky extends Entity {
      */
     if (canTurn(0.1f)) {
       snap();
-      vel.set(calcVelocity(delta, scatterTarget));
+      vel.set(calcVelocity(delta));
     }
 
     pos.add(vel.cpy().scl(delta));
@@ -69,6 +74,8 @@ public class Blinky extends Entity {
    * which one is the closest to our target and return the velocity
    * that will bring us there. 
    *
+   * Uses the currrent target when calculating distance.
+   *
   val BlinkyScatterTarget : Point = Point(25,-3)
   val PinkyScatterTarget : Point = Point(2,-3)
   val InkyScatterTarget : Point = Point(28,35)
@@ -79,7 +86,7 @@ public class Blinky extends Entity {
    * @param delta used to scale the movement applied to our position.
    * @return Vector2 the updated velocity.
    */
-  private Vector2 calcVelocity(float delta, Vector2 target) {
+  private Vector2 calcVelocity(float delta) {
     Map<Float, Vector2> distToVel = new HashMap<>();
     Vector2 opp = vel.cpy().scl(-1).nor();
 
@@ -121,21 +128,17 @@ public class Blinky extends Entity {
   }
 
   /**
-   * Gets the current speed of Blinky.
-   * speed is represented in pixels per second.
-   *
-   * @return float, blinky's speed in pixels per second.
+   * Get current target.
    */
-  public float getSpeed() {
-    return this.speed;
+  public Vector2 getTarget() {
+    return this.target;
   }
 
   /**
-   * Sets a new speed for Blinky.
-   * speed is represented in pixels per second.
-   * @param pSpeed representing new speed for blinky.
+   * Set the target tile.
+   * @param pTarget position of the ghost target.
    */
-  public void setSpeed(float pSpeed) {
-    speed = pSpeed;
+  public void setTarget(Vector2 pTarget) {
+    this.target = pTarget;
   }
 }
