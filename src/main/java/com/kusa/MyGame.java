@@ -17,6 +17,7 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.kusa.entities.Entity;
 import com.kusa.entities.Pac;
@@ -29,7 +30,7 @@ public class MyGame extends Game {
   private static float unitScale = 1 / 20f;
 
   private SpriteBatch batch;
-  private FitViewport viewport;
+  private ExtendViewport viewport;
   private OrthographicCamera camera;
   private OrthogonalTiledMapRenderer mapRenderer;
 
@@ -52,7 +53,7 @@ public class MyGame extends Game {
     camera = new OrthographicCamera();
     camera.setToOrtho(false, 28, 31);
 
-    viewport = new FitViewport(28, 31, camera);
+    viewport = new ExtendViewport(28, 31, camera);
 
     mazeMap = new TmxMapLoader().load("map/maze.tmx");
     mapRenderer = new OrthogonalTiledMapRenderer(mazeMap, unitScale);
@@ -111,6 +112,7 @@ public class MyGame extends Game {
     //r g b a clearDepthBuffer
     ScreenUtils.clear(0, 0, 0, 1, true);
 
+    camera.position.set(28f / 2f, 31f / 2f, 0);
     camera.update();
 
     batch.setProjectionMatrix(camera.combined);
@@ -132,7 +134,7 @@ public class MyGame extends Game {
 
   @Override
   public void resize(int width, int height) {
-    viewport.update(width, height);
+    viewport.update(width, height, true);
   }
 
   @Override
