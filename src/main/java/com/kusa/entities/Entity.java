@@ -7,6 +7,24 @@ import com.kusa.util.Point;
 public abstract class Entity {
 
   /**
+   * Reference to the maze from the game class.
+   *
+   * All entities will use this reference for
+   * checking collisions. this array only
+   * contains the 'walls' for collision purposes.
+   */
+  protected static Point[] walls;
+
+  /**
+   * Standard 4 directional vectors.
+   * might delete
+   */
+  public static Vector2 UP = new Vector2(0f, 1f);
+  public static Vector2 DOWN = new Vector2(0f, -1f);
+  public static Vector2 LEFT = new Vector2(-1f, 0f);
+  public static Vector2 RIGHT = new Vector2(1f, 0f);
+
+  /**
    * Entities position vector.
    */
   protected Vector2 pos;
@@ -17,16 +35,31 @@ public abstract class Entity {
   protected Vector2 vel;
 
   /**
-   * Reference to the maze from the game class.
+   * Speed in pixels per second.
    */
-  protected static Point[] walls;
+  protected float speed;
 
   /**
-   * Constructs an entity with an x, y and maze reference.
+   * Constructs an entity with an x and y value and default speed (1f).
+   *
+   * @param x x position of entity.
+   * @param y y posiition of entity.
    */
   public Entity(float x, float y) {
+    this(x, y, 1f);
+  }
+
+  /**
+   * Constructs an entity with an x, y and speed.
+   *
+   * @param x x position of entity.
+   * @param y y position of entity.
+   * @param speed float representing pixel per second speed of entity.
+   */
+  public Entity(float x, float y, float speed) {
     pos = new Vector2(x, y);
     vel = new Vector2(0f, 0f);
+    this.speed = speed;
   }
 
   /**
@@ -69,6 +102,25 @@ public abstract class Entity {
    */
   public Vector2 getPos() {
     return this.pos;
+  }
+
+  /**
+   * Gets the current speed of entity.
+   * speed is represented in pixels per second.
+   *
+   * @return float, entity's speed in pixels per second.
+   */
+  public float getSpeed() {
+    return this.speed;
+  }
+
+  /**
+   * Sets a new speed for entity.
+   * speed is represented in pixels per second.
+   * @param pSpeed representing new speed for entity.
+   */
+  public void setSpeed(float pSpeed) {
+    speed = pSpeed;
   }
 
   /**

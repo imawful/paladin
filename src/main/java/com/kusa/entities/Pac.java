@@ -12,17 +12,15 @@ public class Pac extends Entity {
   private Vector2 nextPos;
 
   /**
-   * Speed in pixels per second.
-   */
-  private float speed;
-
-  /**
-   * Constructs a pac entity with an x, y and maze reference.
+   * Constructs a pac entity with an x, y and speed.
    */
   public Pac(float x, float y) {
-    super(x, y);
+    this(x, y, 7.5f);
+  }
+
+  public Pac(float x, float y, float speed) {
+    super(x, y, speed);
     nextPos = new Vector2(0f, 0f);
-    speed = 7.5f;
   }
 
   /**
@@ -104,24 +102,5 @@ public class Pac extends Entity {
     Vector2 nPos = pos.cpy().add(newVelocity.cpy().scl(delta));
     if (!collidesWithWall(nPos)) return newVelocity;
     else return vel.cpy();
-  }
-
-  /**
-   * Gets the current speed of Pac.
-   * speed is represented in pixels per second.
-   *
-   * @return float, pac's speed in pixels per second.
-   */
-  public float getSpeed() {
-    return this.speed;
-  }
-
-  /**
-   * Sets a new speed for Pac.
-   * speed is represented in pixels per second.
-   * @param pSpeed representing new speed for pac.
-   */
-  public void setSpeed(float pSpeed) {
-    speed = pSpeed;
   }
 }
