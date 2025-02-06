@@ -29,6 +29,12 @@ import java.util.Set;
 
 public class MyGame extends Game {
 
+  public enum GhostState {
+    SCATTER,
+    FRIGHT,
+    CHASE,
+  }
+
   public static float unitScale = 1 / 20f;
 
   //game rendering
@@ -52,6 +58,14 @@ public class MyGame extends Game {
 
   //debug
   private ShapeRenderer shapeRenderer;
+
+  private float ghostStateTime = 0f;
+  private float ghostStateDuration = 8f;
+  private GhostState ghostState = GhostState.SCATTER;
+
+  private float ghostStateTimeTmp = 0f;
+  private float ghostStateDurationTmp = 0f;
+  private GhostState ghostStateTmp = GhostState.SCATTER;
 
   @Override
   public void create() {
@@ -77,7 +91,7 @@ public class MyGame extends Game {
 
     pac = new Pac(13f, 30f - 23f);
 
-    //set 13 to start then move maybe.
+    //set 13 to start then 12 to move maybe.
     blinky = new Blinky(12f, 30f - 11f);
 
     eatenPoints = new HashSet<>();
@@ -139,12 +153,70 @@ public class MyGame extends Game {
     //check if pac pos is on a pellet.
     for (Point p : candyPoints) if (
       pacSquare.contains(p.getCenter()) && !(eatenPoints.contains(p))
-    ) eatenPoints.add(p);
+    ) {
+      eatenPoints.add(p);
+      break;
+    }
 
     //check if pac pos is on a super pellet.
     for (Point p : superCandyPoints) if (
       pacSquare.contains(p.getCenter()) && !(eatenPoints.contains(p))
-    ) eatenPoints.add(p);
+    ) {
+      setFrightMode();
+      eatenPoints.add(p);
+      break;
+    }
+
+    switch (ghostState) {
+      case SCATTER:
+        blinky.setTarget(Blinky.SCATTER_TILE);
+        break;
+      case FRIGHT:
+        // set target
+        break;
+      case CHASE:
+        blinky.setTarget(pac.getPos());
+        break;
+      default:
+        break;
+    }
+
+    if (ghostStateTime >= ghostStateDuration) {
+      ghostStateTime = 0f;
+      ghostState = nextGhostState();
+    } else {
+      ghostStateTime += delta;
+    }
+
+    System.out.println("GHOST STATE: " + ghostState);
+    System.out.println("Ghost State TIME: " + ghostStateTime);
+  }
+
+  private void setFrightMode() {
+    ghostStateTmp = ghostState;
+    ghostStateTimeTmp = ghostStateTime;
+    ghostStateDurationTmp = ghostStateDuration;
+    ghostStateTime = 0f;
+    ghostStateDuration = 4f; //TIME FRIGHTENED
+    ghostState = GhostState.FRIGHT;
+  }
+
+  private GhostState nextGhostState() {
+    switch (ghostState) {
+      //flip back to chase.
+      case SCATTER -> {
+        return GhostState.CHASE;
+      }
+      case FRIGHT -> {
+        ghostStateTime = ghostStateTimeTmp;
+        ghostStateDuration = ghostStateDurationTmp;
+
+        ghostStateTimeTmp = 0f;
+        ghostStateDurationTmp = 0f;
+        return ghostStateTmp;
+      }
+    }
+    return GhostState.SCATTER;
   }
 
   /**
