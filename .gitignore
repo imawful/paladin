@@ -6,3 +6,9 @@
 *.jar
 
 src/main/resources/map/*/
+
+node_modules/
+
+package.json
+package-lock.json
+.prettierrc.yaml
