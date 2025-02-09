@@ -16,15 +16,6 @@ public abstract class Entity {
   protected static Point[] walls;
 
   /**
-   * Standard 4 directional vectors.
-   * might delete
-   */
-  public static Vector2 UP = new Vector2(0f, 1f);
-  public static Vector2 DOWN = new Vector2(0f, -1f);
-  public static Vector2 LEFT = new Vector2(-1f, 0f);
-  public static Vector2 RIGHT = new Vector2(1f, 0f);
-
-  /**
    * Entities position vector.
    */
   protected Vector2 pos;
@@ -70,38 +61,19 @@ public abstract class Entity {
   public abstract void logic(float delta);
 
   /**
-   * Sets new position entity.
-   *
-   * updates the position vector. probably
-   * won't need to call this unless you want more
-   * conrol of this entity outside its implemented class.
-   *
-   * @param x new x position for entity.
-   * @param y new y position for entity.
-   */
-  public void setPos(float x, float y) {
-    pos.set(x, y);
-  }
-
-  /**
-   * Sets new position entity.
-   *
-   * updates the position vector. probably
-   * won't need to call this unless you want more
-   * conrol of this entity outside its implemented class.
-   *
-   * @param v new vector for entity's position.
-   */
-  public void setPos(Vector2 v) {
-    pos.set(v);
-  }
-
-  /**
-   * Gets the vector of entities position.
+   * Gets the vector of entity's position.
    * @return vector2 representing this entities position.
    */
   public Vector2 getPos() {
-    return this.pos;
+    return this.pos.cpy();
+  }
+
+  /**
+   * Gets the vector of entity's velocity.
+   * @return vector2 representing this entities position.
+   */
+  public Vector2 getVel() {
+    return this.vel.cpy();
   }
 
   /**
@@ -153,10 +125,23 @@ public abstract class Entity {
    * the collsion checks to see if any wall overlaps this rectangle.
    *
    * @param pos_ the position to check wether it collides with a wall.
+   * @param ignoreGate if true, the gate will not act like a wall.
    */
   public static boolean collidesWithWall(Vector2 pos_) {
+    return collidesWithWall(pos_, false);
+  }
+
+  public static boolean collidesWithWall(Vector2 pos_, boolean ignoreGate) {
     Rectangle p = new Rectangle(pos_.x, pos_.y, 1f, 1f);
-    for (Point w : walls) if (w.getRect().overlaps(p)) return true;
+    for (Point w : walls) {
+      boolean isGate =
+        (w.getX() == 13f && w.getY() == (30f - 12f)) ||
+        (w.getX() == 14f && w.getY() == (30f - 12f));
+      if (ignoreGate && isGate) {
+        System.out.println("ignoring the gate..." + w.getX() + ", " + w.getY());
+        continue;
+      } else if (w.getRect().overlaps(p)) return true;
+    }
     return false;
   }
 }
