@@ -22,18 +22,15 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.kusa.entities.Blinky;
 import com.kusa.entities.Entity;
+import com.kusa.entities.Ghost;
+import com.kusa.entities.Ghost.GhostState;
 import com.kusa.entities.Pac;
+import com.kusa.entities.Pinky;
 import com.kusa.util.Point;
 import java.util.HashSet;
 import java.util.Set;
 
 public class MyGame extends Game {
-
-  public enum GhostState {
-    SCATTER,
-    FRIGHT,
-    CHASE,
-  }
 
   public static float unitScale = 1 / 20f;
 
@@ -51,13 +48,14 @@ public class MyGame extends Game {
 
   //game entities
   private Pac pac;
-  private Blinky blinky;
+  private Ghost[] ghosts;
+
+  //collision rects
+  private Rectangle pacRect;
+  private Rectangle ghostRect;
 
   //game logic
   private Set<Point> eatenPoints;
-
-  //debug
-  private ShapeRenderer shapeRenderer;
 
   private float ghostStateTime = 0f;
   private float ghostStateDuration = 8f;
@@ -66,6 +64,9 @@ public class MyGame extends Game {
   private float ghostStateTimeTmp = 0f;
   private float ghostStateDurationTmp = 0f;
   private GhostState ghostStateTmp = GhostState.SCATTER;
+
+  //debug
+  private ShapeRenderer shapeRenderer;
 
   @Override
   public void create() {
@@ -92,7 +93,17 @@ public class MyGame extends Game {
     pac = new Pac(13f, 30f - 23f);
 
     //set 13 to start then 12 to move maybe.
-    blinky = new Blinky(12f, 30f - 11f);
+    ghosts = new Ghost[] {
+      new Blinky(12f, 30f - 11f),
+      new Pinky(12f, 30f - 14f),
+    };
+    pacRect = new Rectangle(pac.getPos().x, pac.getPos().y, 1f, 1f);
+    ghostRect = new Rectangle(
+      ghosts[0].getPos().x,
+      ghosts[0].getPos().y,
+      0.8f,
+      0.8f
+    );
 
     eatenPoints = new HashSet<>();
   }
@@ -146,41 +157,7 @@ public class MyGame extends Game {
    * which require it.
    */
   private void logic(float delta) {
-    pac.logic(delta);
-    blinky.logic(delta);
-
-    Rectangle pacSquare = new Rectangle(pac.getPos().x, pac.getPos().y, 1f, 1f);
-    //check if pac pos is on a pellet.
-    for (Point p : candyPoints) if (
-      pacSquare.contains(p.getCenter()) && !(eatenPoints.contains(p))
-    ) {
-      eatenPoints.add(p);
-      break;
-    }
-
-    //check if pac pos is on a super pellet.
-    for (Point p : superCandyPoints) if (
-      pacSquare.contains(p.getCenter()) && !(eatenPoints.contains(p))
-    ) {
-      setFrightMode();
-      eatenPoints.add(p);
-      break;
-    }
-
-    switch (ghostState) {
-      case SCATTER:
-        blinky.setTarget(Blinky.SCATTER_TILE);
-        break;
-      case FRIGHT:
-        // set target
-        break;
-      case CHASE:
-        blinky.setTarget(pac.getPos());
-        break;
-      default:
-        break;
-    }
-
+    // timer(s) logic
     if (ghostStateTime >= ghostStateDuration) {
       ghostStateTime = 0f;
       ghostState = nextGhostState();
@@ -188,19 +165,103 @@ public class MyGame extends Game {
       ghostStateTime += delta;
     }
 
-    System.out.println("GHOST STATE: " + ghostState);
-    System.out.println("Ghost State TIME: " + ghostStateTime);
+    //entities logic.
+
+    pac.logic(delta); //moves pac
+    for (Ghost ghost : ghosts) {
+      //game has little control over
+      //ghost state here including their
+      //target.
+      ghost.setChaseTarget(pac.getPos(), pac.getVel());
+      ghost.setGameState(
+        ghostState == GhostState.FRIGHT ? ghostStateTmp : ghostState
+      );
+
+      //we spawn ghosts under different conditions.
+      //for blinky here we check if the amount of canides
+      //is above 0 meaning he will leave the pen as
+      //soon as he enters.
+      if (eatenPoints.size() >= 0 && ghost.inPen()) {
+        System.out.println("Setting LEAVING PEN");
+        ghost.setLeavingPen();
+      }
+
+      ghost.logic(delta); //moves ghost
+      System.out.println(ghost);
+    }
+
+    //collision between pac and points.
+    pacRect.setPosition(pac.getPos());
+    //check if pac pos is on a pellet.
+    for (Point p : candyPoints) if (
+      pacRect.contains(p.getCenter()) && !(eatenPoints.contains(p))
+    ) {
+      eatenPoints.add(p);
+      break;
+    }
+
+    //check if pac pos is on a super pellet.
+    //this triggers fright mode for ghosts
+    //so we make sure to let the ghosts know.
+    for (Point p : superCandyPoints) if (
+      pacRect.contains(p.getCenter()) && !(eatenPoints.contains(p))
+    ) {
+      eatenPoints.add(p);
+      setFrightMode();
+
+      //ghosts will take care of making sure
+      //they will turn frightened only if possible
+      for (Ghost ghost : ghosts) ghost.setFrightened(true);
+
+      break;
+    }
+
+    //check if pac and ghost collide.
+    for (Ghost ghost : ghosts) {
+      ghostRect.setPosition(ghost.getPos());
+      if (ghostRect.overlaps(pacRect)) {
+        ghost.setAte();
+        if (!ghost.isFrightened()) System.out.println("GAME OVERR");
+      }
+    }
   }
 
+  /**
+   * We force set fright mode whenever pac
+   * eats a super.
+   *
+   * this affects only the games timers
+   * for managing the scatter/chase state.
+   *  ghostStateTime ghostStateTmpTime.
+   *  ghostState ghostStateTmp.
+   *
+   * The durations are set to predefined values.
+   *
+   * The game is responsible for calling update to
+   * update the ghosts state.
+   */
   private void setFrightMode() {
-    ghostStateTmp = ghostState;
-    ghostStateTimeTmp = ghostStateTime;
-    ghostStateDurationTmp = ghostStateDuration;
+    if (ghostState != GhostState.FRIGHT) {
+      ghostStateTmp = ghostState;
+      ghostStateTimeTmp = ghostStateTime;
+      ghostStateDurationTmp = ghostStateDuration;
+    }
     ghostStateTime = 0f;
-    ghostStateDuration = 4f; //TIME FRIGHTENED
+    ghostStateDuration = 8f; //TIME FRIGHTENED
     ghostState = GhostState.FRIGHT;
   }
 
+  /**
+   * We flip back and forth between chase
+   * and scatter.
+   *
+   * Special case:
+   *  Fright - own duration.
+   *  if our current state is fright we go back
+   *  to our previous afer the duration ends.
+   *
+   * @return ghost state (ONLY SCATTER OR CHASE)
+   */
   private GhostState nextGhostState() {
     switch (ghostState) {
       //flip back to chase.
@@ -213,6 +274,10 @@ public class MyGame extends Game {
 
         ghostStateTimeTmp = 0f;
         ghostStateDurationTmp = 0f;
+
+        //ghosts will take care of making sure
+        //they will exit frightened safely
+        for (Ghost ghost : ghosts) ghost.setFrightened(false);
         return ghostStateTmp;
       }
     }
@@ -296,9 +361,21 @@ public class MyGame extends Game {
     shapeRenderer.ellipse(pacpos.x, pacpos.y, 1f, 1f);
 
     //render blinky
-    shapeRenderer.setColor(255f, 0f, 0f, 1f);
-    Vector2 blinkypos = blinky.getPos();
-    shapeRenderer.ellipse(blinkypos.x, blinkypos.y, 1f, 1f);
+    for (int i = 0; i < ghosts.length; i++) {
+      Ghost ghost = ghosts[i];
+      Color defColor = Color.RED;
+      if (i == 1) defColor = Color.PINK;
+
+      if (ghost.isFrightened()) shapeRenderer.setColor(0f, 0f, 255f, 1f);
+      else if (ghost.isAte()) shapeRenderer.setColor(Color.WHITE);
+      else shapeRenderer.setColor(defColor);
+      //shapeRenderer.setColor(255f, 0f, 0f, 1f);
+
+      shapeRenderer.ellipse(ghost.getPos().x, ghost.getPos().y, 1f, 1f);
+
+      //ghosts target.
+      shapeRenderer.rect(ghost.getTarget().x, ghost.getTarget().y, 1f, 1f);
+    }
 
     shapeRenderer.end();
   }
