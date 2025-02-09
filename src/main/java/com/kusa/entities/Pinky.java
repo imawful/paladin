@@ -15,38 +15,45 @@ import java.util.Map;
   val GateTarget : Point = Point(13,11)
   val PenTarget : Point = Point(13,15)
 */
-public class Blinky extends Ghost {
+public class Pinky extends Ghost {
 
   /**
-   * Constructs a blinky entity with an x, y, speed, state,
+   * Constructs a Pinky entity with an x, y, speed, state,
    * and target.
    *
    * Blinkys default constructor values.
    *  speed = 7.5f
-   *  state = scatter.
-   *  target = blinky scatter target.
+   *  state = in pen.
+   *  target = pinky scatter target.
    *
    */
-  public Blinky(float x, float y) {
+  public Pinky(float x, float y) {
     this(x, y, 7.5f);
   }
 
-  //Call This One.
-  public Blinky(float x, float y, float speed) {
+  public Pinky(float x, float y, float speed) {
     super(x, y, speed);
-    state = GhostState.SCATTER;
-    target = Ghost.BLINKY_SCATTER_TARGET.cpy();
-    enteringPenTarget = Ghost.BLINKY_ENTERINGPEN_TARGET;
-    scatterTarget = Ghost.BLINKY_SCATTER_TARGET;
+    state = GhostState.INPEN;
+    target = Ghost.ATE_TARGET.cpy();
+    enteringPenTarget = Ghost.PINKY_ENTERINGPEN_TARGET;
+    scatterTarget = Ghost.PINKY_SCATTER_TARGET;
+  }
+
+  @Override
+  public void setChaseTarget(Vector2 pacPos, Vector2 pacVel) {
+    if (pacVel.isZero()) return;
+    if (state == GhostState.CHASE) chaseTarget = pacPos
+      .cpy()
+      .add(pacVel.cpy().nor().scl(4f));
   }
 
   @Override
   public void setChaseTarget(Vector2 pacPos) {
-    if (state == GhostState.CHASE) chaseTarget = pacPos.cpy();
+    //shouldnt be called. fix tthis!
   }
 
   @Override
   public String toString() {
-    return "Blinky Target: " + target + " Blinky State: " + state;
+    return "Pinky Target: " + target + " Pinky State: " + state;
   }
 }
