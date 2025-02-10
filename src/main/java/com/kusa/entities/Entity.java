@@ -60,12 +60,23 @@ public abstract class Entity {
    */
   public abstract void logic(float delta);
 
+  protected abstract boolean collidesWithWall(Vector2 pos_, Point[] walls);
+
   /**
    * Gets the vector of entity's position.
    * @return vector2 representing this entities position.
    */
   public Vector2 getPos() {
     return this.pos.cpy();
+  }
+
+  /**
+   * Sets the vector of entitys position.
+   *
+   * use carefully!
+   */
+  public void setPos(Vector2 pPos) {
+    this.pos.set(pPos);
   }
 
   /**
@@ -115,33 +126,5 @@ public abstract class Entity {
    */
   public static void setWalls(Point[] walls) {
     Entity.walls = walls;
-  }
-
-  /**
-   * Returns true if the point pos_ were to collide
-   * with a wall.
-   *
-   * a rectangle is construced from point pos with 1f width and height.
-   * the collsion checks to see if any wall overlaps this rectangle.
-   *
-   * @param pos_ the position to check wether it collides with a wall.
-   * @param ignoreGate if true, the gate will not act like a wall.
-   */
-  public static boolean collidesWithWall(Vector2 pos_) {
-    return collidesWithWall(pos_, false);
-  }
-
-  public static boolean collidesWithWall(Vector2 pos_, boolean ignoreGate) {
-    Rectangle p = new Rectangle(pos_.x, pos_.y, 1f, 1f);
-    for (Point w : walls) {
-      boolean isGate =
-        (w.getX() == 13f && w.getY() == (30f - 12f)) ||
-        (w.getX() == 14f && w.getY() == (30f - 12f));
-      if (ignoreGate && isGate) {
-        System.out.println("ignoring the gate..." + w.getX() + ", " + w.getY());
-        continue;
-      } else if (w.getRect().overlaps(p)) return true;
-    }
-    return false;
   }
 }
