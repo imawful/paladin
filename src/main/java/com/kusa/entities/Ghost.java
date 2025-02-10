@@ -4,18 +4,13 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.kusa.util.Point;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-/*
-  val BlinkyScatterTarget : Point = Point(25,-3)
-  val PinkyScatterTarget : Point = Point(2,-3)
-  val InkyScatterTarget : Point = Point(28,35)
-  val ClydeScatterTarget : Point = Point(-1,33)
-  val GateTarget : Point = Point(13,11)
-  val PenTarget : Point = Point(13,15)
-*/
-public abstract class Ghost extends Entity {
+public class Ghost extends Entity {
 
   public enum GhostState {
     ENTERINGPEN,
@@ -27,46 +22,32 @@ public abstract class Ghost extends Entity {
     ATE,
   }
 
-  /**
-   * Position of targets for ghosts.
-   */
-  public static final Vector2 BLINKY_SCATTER_TARGET = new Vector2(
-    25f,
-    30f - (-3f)
-  );
-  public static final Vector2 PINKY_SCATTER_TARGET = new Vector2(
-    2f,
-    30f - (-3f)
-  );
+  //maybe move (to entity??)
+  public static final float FULL_SPEED = 7.5f;
 
-  public static final Vector2 BLINKY_ENTERINGPEN_TARGET = new Vector2(
-    11f,
-    30f - (14f)
-  );
-  public static final Vector2 PINKY_ENTERINGPEN_TARGET = new Vector2(
-    12f,
-    30f - (14f)
-  );
-
+  //maybe move
   public static final Vector2 ATE_TARGET = new Vector2(13f, 30f - (11f));
 
   /**
    * Current target tile.
    */
-  protected Vector2 target;
+  private Vector2 target;
 
   /**
    * Target used when in chase state.
    */
-  protected Vector2 chaseTarget;
+  private Vector2 chaseTarget;
 
-  protected Vector2 enteringPenTarget;
-  protected Vector2 scatterTarget;
+  private final Vector2 enteringPenTarget;
+
+  private final Vector2 scatterTarget;
+
+  private Vector2 safePos;
 
   /**
    * State of ghost.
    */
-  protected GhostState state;
+  private GhostState state;
 
   /**
    * State of the ghosts in game.
@@ -75,37 +56,39 @@ public abstract class Ghost extends Entity {
    * scatter or chase we always keep the scatter
    * or chase reference here to refer to it.
    */
-  protected GhostState gameState; //always scatter or chase.
+  private GhostState gameState; //always scatter or chase.
 
   /**
-   * Constructs a ghost entity with an x, y, speed.
+   * Constructs a ghost entity with an x, y, speed,
+   * initial state, the initial game state, a final scatter and
+   * entering pen target.
    *
-   * default speed if not provided is 7.5f
+   * if game state provided isn't scatter or chase we choose SCATTER
    *
-   * the needed fields are intitlized and set to zero
-   * or scaatter.
    */
-  public Ghost(float x, float y) {
-    this(x, y, 7.5f);
-  }
-
-  public Ghost(float x, float y, float speed) {
+  public Ghost(
+    float x,
+    float y,
+    float speed,
+    GhostState initialState,
+    GhostState initialGameState,
+    Vector2 scatterTarget,
+    Vector2 enteringPenTarget
+  ) {
     super(x, y, speed);
-    chaseTarget = new Vector2(0f, 0f);
-    gameState = GhostState.SCATTER;
-    state = GhostState.INPEN;
-    target = new Vector2(0f, 0f);
-    enteringPenTarget = new Vector2(0f, 0f);
-    scatterTarget = new Vector2(0f, 0f);
+    //these fields should be updated.
+    target = new Vector2(0f, 0f); //this class chooses a target based on state.
+    chaseTarget = new Vector2(0f, 0f); //should be set by game.
+    safePos = new Vector2(0f, 0f); //this class handles this on its own.
+
+    this.state = initialState;
+    this.gameState = initialGameState;
+    this.scatterTarget = scatterTarget;
+    this.enteringPenTarget = enteringPenTarget;
   }
 
-  /**
-   * A ghost needs to implement how it's chase target is calculated.
-   */
-  public abstract void setChaseTarget(Vector2 pacPos);
-
-  public void setChaseTarget(Vector2 pacPos, Vector2 pacVel) {
-    setChaseTarget(pacPos);
+  public void setChaseTarget(Vector2 target) {
+    this.chaseTarget.set(target);
   }
 
   /**
@@ -126,17 +109,52 @@ public abstract class Ghost extends Entity {
      * meaning that if our current position is within a tile bound
      * with a 0.1 buffer.
      */
-    if (canTurn(0.1f)) {
+    float threshold = 0.05f;
+    if (speed >= (Ghost.FULL_SPEED * 1.25f)) threshold = 0.1f;
+    if (canTurn(threshold)) {
       snap();
       vel.set(calcVelocity(delta));
     }
 
+    Point[] walls = getWalls();
+    if (!collidesWithWall(pos, walls)) {
+      safePos.set(pos.cpy());
+      safePos.x = Math.round(safePos.x);
+      safePos.y = Math.round(safePos.y);
+    }
+
     pos.add(vel.cpy().scl(delta));
+
+    if (collidesWithWall(pos, walls)) pos.set(safePos.cpy());
 
     updateState();
   }
 
-  protected void updateTarget() {
+  private Point[] getWalls() {
+    boolean ignoreGate =
+      (state == GhostState.LEAVINGPEN || state == GhostState.ENTERINGPEN);
+    Point[] walls = ignoreGate
+      ? Arrays.stream(Entity.walls)
+        .filter(wall ->
+          ((wall.getX() != 13f && wall.getY() != (30f - 12f)) &&
+            (wall.getX() != 14f && wall.getY() != (30f - 12f)))
+        )
+        .toArray(Point[]::new)
+      : Entity.walls;
+    return walls;
+  }
+
+  @Override
+  protected boolean collidesWithWall(Vector2 pos_, Point[] walls) {
+    Rectangle posRect = new Rectangle(pos_.x, pos_.y, 1f, 1f);
+    for (Point w : walls) if (
+      (Math.round(pos_.x) == Math.round(w.getX())) &&
+      (Math.round(pos_.y) == Math.round(w.getY()))
+    ) return true;
+    return false;
+  }
+
+  private void updateTarget() {
     switch (state) {
       case ENTERINGPEN:
         target = enteringPenTarget.cpy();
@@ -169,7 +187,7 @@ public abstract class Ghost extends Entity {
     }
   }
 
-  protected void updateState() {
+  private void updateState() {
     boolean reachedTarget = reachedTarget();
     switch (state) {
       case ENTERINGPEN:
@@ -181,7 +199,7 @@ public abstract class Ghost extends Entity {
         break;
       case LEAVINGPEN:
         if (reachedTarget) {
-          System.out.println("LEAVING THE PEN");
+          pos.set(ATE_TARGET);
           state = gameState;
         }
         break;
@@ -207,7 +225,7 @@ public abstract class Ghost extends Entity {
     }
   }
 
-  protected boolean reachedTarget() {
+  private boolean reachedTarget() {
     return pos.dst(target) < 1f;
   }
 
@@ -217,7 +235,7 @@ public abstract class Ghost extends Entity {
    * @return true if the difference between the current
    * position and the nearst tile is LESS than threshold
    */
-  protected boolean canTurn(float threshold) {
+  private boolean canTurn(float threshold) {
     return (
       (Math.abs(pos.x - Math.round(pos.x)) < threshold) &&
       (Math.abs(pos.y - Math.round(pos.y)) < threshold)
@@ -234,46 +252,45 @@ public abstract class Ghost extends Entity {
    * if no valid moves are found the current velocity
    * is returned.
    *
-   * TODO maybe improve this method!
+   * TODO find a way to prioritze from up, to left, to down, to right
+   *
    * alt name - move toward target?
    *
    * @param delta used to scale the movement applied to our position.
    * @return Vector2 the updated velocity.
    */
-  protected Vector2 calcVelocity(float delta) {
+  private Vector2 calcVelocity(float delta) {
     Map<Float, Vector2> distToVel = new HashMap<>();
+
     Vector2 opp = vel.cpy().scl(-1).nor();
 
-    boolean ignoreGate =
-      (state == GhostState.LEAVINGPEN || state == GhostState.ENTERINGPEN);
+    Point[] walls = getWalls();
 
-    //up down left right.
-    Vector2 upVel = new Vector2(0f, 1f).nor().scl(speed);
-    Vector2 upPos = pos.cpy().add(upVel.cpy().scl(delta));
-    if (!collidesWithWall(upPos, ignoreGate) && !opp.epsilonEquals(0f, 1f)) {
+    Vector2 upPos = pos.cpy().add(0f, 1f);
+    Vector2 upVel = new Vector2(0f, 1f).scl(speed);
+    if (!collidesWithWall(upPos, walls) && !opp.epsilonEquals(0f, 1f)) {
       float dist = upPos.dst(target);
       distToVel.put(dist, upVel);
     }
-
+    Vector2 leftPos = pos.cpy().add(-1f, 0f);
     Vector2 leftVel = new Vector2(-1f, 0f).scl(speed);
-    Vector2 leftPos = pos.cpy().add(leftVel.cpy().scl(delta));
-    if (!collidesWithWall(leftPos, ignoreGate) && !opp.epsilonEquals(-1f, 0f)) {
+    if (!collidesWithWall(leftPos, walls) && !opp.epsilonEquals(-1f, 0f)) {
       float dist = leftPos.dst(target);
-      if (!distToVel.containsKey(dist)) distToVel.put(dist, leftVel);
+      distToVel.put(dist, leftVel);
     }
 
+    Vector2 downPos = pos.cpy().add(0f, -1f);
     Vector2 downVel = new Vector2(0f, -1f).scl(speed);
-    Vector2 downPos = pos.cpy().add(downVel.cpy().scl(delta));
-    if (!collidesWithWall(downPos, ignoreGate) && !opp.epsilonEquals(0f, -1f)) {
+    if (!collidesWithWall(downPos, walls) && !opp.epsilonEquals(0f, -1f)) {
       float dist = downPos.dst(target);
-      if (!distToVel.containsKey(dist)) distToVel.put(dist, downVel);
+      distToVel.put(dist, downVel);
     }
 
+    Vector2 rightPos = pos.cpy().add(1f, 0f);
     Vector2 rightVel = new Vector2(1f, 0f).scl(speed);
-    Vector2 rightPos = pos.cpy().add(rightVel.cpy().scl(delta));
-    if (!collidesWithWall(rightPos, ignoreGate) && !opp.epsilonEquals(1f, 0f)) {
+    if (!collidesWithWall(rightPos, walls) && !opp.epsilonEquals(1f, 0f)) {
       float dist = rightPos.dst(target);
-      if (!distToVel.containsKey(dist)) distToVel.put(dist, rightVel);
+      distToVel.put(dist, rightVel);
     }
 
     float shortest = Float.MAX_VALUE;
@@ -359,6 +376,10 @@ public abstract class Ghost extends Entity {
    */
   public Vector2 getTarget() {
     return this.target.cpy();
+  }
+
+  public Vector2 getScatterTarget() {
+    return this.scatterTarget.cpy();
   }
 
   /**
