@@ -2,7 +2,9 @@ package com.kusa.entities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.kusa.util.Point;
 
 public class Pac extends Entity {
 
@@ -53,11 +55,11 @@ public class Pac extends Entity {
   public void logic(float delta) {
     /*
      *                    MOVEMENT
-     * we check to see if we can turn with a threshold of 0.1
+     * we check to see if we can turn with a threshold of 0.05
      * meaning that if our current position is within a tile bound
-     * with a 0.1 buffer.
+     * with a 0.05 buffer.
      */
-    if (canTurn(0.1f)) {
+    if (canTurn(0.05f)) {
       snap();
       vel.set(calcVelocity(delta));
     }
@@ -66,12 +68,21 @@ public class Pac extends Entity {
     //we advance. the next position is just our current position
     //with the added velocity that we calculated.
     Vector2 nextPos = pos.cpy().add(vel.cpy().scl(delta));
-    if (!collidesWithWall(nextPos)) pos.set(nextPos);
+    if (!collidesWithWall(nextPos, Entity.walls)) pos.set(nextPos);
     else {
       snap();
       vel.set(0f, 0f);
     }
     /*          END OF MOVEMENT         */
+  }
+
+  @Override
+  protected boolean collidesWithWall(Vector2 pos_, Point[] walls) {
+    Rectangle posRect = new Rectangle(pos_.x, pos_.y, 1f, 1f);
+    for (Point w : walls) if (posRect.overlaps(w.getRect())) {
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -100,7 +111,7 @@ public class Pac extends Entity {
   private Vector2 calcVelocity(float delta) {
     Vector2 newVelocity = nextPos.cpy().nor().scl(speed);
     Vector2 nPos = pos.cpy().add(newVelocity.cpy().scl(delta));
-    if (!collidesWithWall(nPos)) return newVelocity;
+    if (!collidesWithWall(nPos, Entity.walls)) return newVelocity;
     else return vel.cpy();
   }
 }
