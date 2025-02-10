@@ -20,19 +20,19 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.kusa.entities.Blinky;
 import com.kusa.entities.Entity;
 import com.kusa.entities.Ghost;
 import com.kusa.entities.Ghost.GhostState;
 import com.kusa.entities.Pac;
-import com.kusa.entities.Pinky;
 import com.kusa.util.Point;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class MyGame extends Game {
 
   public static float unitScale = 1 / 20f;
+  public static float ATE_SPEED_MULTIPLIER = 1.5f;
 
   //game rendering
   private SpriteBatch batch;
@@ -45,6 +45,8 @@ public class MyGame extends Game {
   private Point[] wallPoints;
   private Point[] candyPoints;
   private Point[] superCandyPoints;
+  private Rectangle leftTunnel;
+  private Rectangle rightTunnel;
 
   //game entities
   private Pac pac;
@@ -57,13 +59,30 @@ public class MyGame extends Game {
   //game logic
   private Set<Point> eatenPoints;
 
-  private float ghostStateTime = 0f;
-  private float ghostStateDuration = 8f;
-  private GhostState ghostState = GhostState.SCATTER;
+  private float ghostStateTime;
+  private float ghostStateDuration;
+  private GhostState ghostState;
 
-  private float ghostStateTimeTmp = 0f;
-  private float ghostStateDurationTmp = 0f;
-  private GhostState ghostStateTmp = GhostState.SCATTER;
+  private float ghostStateTimeTmp;
+  private float ghostStateDurationTmp;
+  private GhostState ghostStateTmp;
+
+  private float[] scatterChaseIntervals;
+  private int scatterChaseIndex;
+  private float frightTime;
+
+  private float pacSpeedMultiplier;
+  private float pacFrightSpeedMultiplier;
+
+  private int angryModeOneDotLimit;
+  private int angryModeTwoDotLimit;
+
+  private float angryModeOneSpeedMultiplier;
+  private float angryModeTwoSpeedMultiplier;
+
+  private float ghostSpeedMultiplier;
+  private float ghostFrightSpeedMultiplier;
+  private float ghostTunnelSpeedMultiplier; //highest priority
 
   //debug
   private ShapeRenderer shapeRenderer;
@@ -92,10 +111,43 @@ public class MyGame extends Game {
 
     pac = new Pac(13f, 30f - 23f);
 
-    //set 13 to start then 12 to move maybe.
     ghosts = new Ghost[] {
-      new Blinky(12f, 30f - 11f),
-      new Pinky(12f, 30f - 14f),
+      new Ghost(
+        12f,
+        30f - 11f,
+        Ghost.FULL_SPEED,
+        GhostState.SCATTER,
+        GhostState.SCATTER,
+        new Vector2(25f, 30f - (-3f)),
+        new Vector2(11f, 30f - (14f))
+      ), //blinky
+      new Ghost(
+        12f,
+        30f - 14f,
+        Ghost.FULL_SPEED,
+        GhostState.INPEN,
+        GhostState.SCATTER,
+        new Vector2(2f, 30f - (-3f)),
+        new Vector2(12f, 30f - (14f))
+      ), //pinky
+      new Ghost(
+        14f,
+        30f - 14f,
+        Ghost.FULL_SPEED,
+        GhostState.INPEN,
+        GhostState.SCATTER,
+        new Vector2(28f, 30f - (35f)),
+        new Vector2(14f, 30f - (14f))
+      ), //inky
+      new Ghost(
+        16f,
+        30f - 14f,
+        Ghost.FULL_SPEED,
+        GhostState.INPEN,
+        GhostState.SCATTER,
+        new Vector2(-1f, 30f - (33f)),
+        new Vector2(16f, 30f - (14f))
+      ), //clyde
     };
     pacRect = new Rectangle(pac.getPos().x, pac.getPos().y, 1f, 1f);
     ghostRect = new Rectangle(
@@ -106,6 +158,33 @@ public class MyGame extends Game {
     );
 
     eatenPoints = new HashSet<>();
+
+    // LEVEL DEPENDENT DATA IS SET HERE.
+    frightTime = 6f;
+    scatterChaseIntervals = new float[] { 7f, 20f, 7f, 20f, 5f, 20f, 5f };
+    scatterChaseIndex = 0;
+
+    pacSpeedMultiplier = 0.8f;
+    pacFrightSpeedMultiplier = 0.9f;
+
+    angryModeOneDotLimit = 20;
+    angryModeTwoDotLimit = 10;
+
+    angryModeOneSpeedMultiplier = 0.8f;
+    angryModeTwoSpeedMultiplier = 0.85f;
+
+    ghostSpeedMultiplier = 0.75f;
+    ghostFrightSpeedMultiplier = 0.5f;
+    ghostTunnelSpeedMultiplier = 0.4f; //highest priority
+
+    ghostStateTime = 0f;
+    ghostStateDuration = scatterChaseIntervals[0];
+    ghostState = GhostState.SCATTER;
+
+    //tmp to zero.
+    ghostStateTimeTmp = 0f;
+    ghostStateDurationTmp = 0f;
+    ghostStateTmp = GhostState.SCATTER;
   }
 
   /**
@@ -150,6 +229,8 @@ public class MyGame extends Game {
           new Point(i, j);
       }
     }
+    this.leftTunnel = new Rectangle(0f, (30f - 15f), 5f, 3f);
+    this.rightTunnel = new Rectangle(23f, (30f - 15f), 5f, 3f);
   }
 
   /**
@@ -165,14 +246,20 @@ public class MyGame extends Game {
       ghostStateTime += delta;
     }
 
-    //entities logic.
+    //game applies speed multipliers across levels.
+    applySpeedMultipliers();
 
+    //entities logic.
     pac.logic(delta); //moves pac
-    for (Ghost ghost : ghosts) {
-      //game has little control over
-      //ghost state here including their
-      //target.
-      ghost.setChaseTarget(pac.getPos(), pac.getVel());
+
+    //game has little control over
+    //ghost state here including their
+    //target.
+    for (int i = 0; i < ghosts.length; i++) {
+      Ghost ghost = ghosts[i];
+
+      if (!pac.getVel().isZero()) ghost.setChaseTarget(getChaseTarget(i));
+
       ghost.setGameState(
         ghostState == GhostState.FRIGHT ? ghostStateTmp : ghostState
       );
@@ -181,13 +268,32 @@ public class MyGame extends Game {
       //for blinky here we check if the amount of canides
       //is above 0 meaning he will leave the pen as
       //soon as he enters.
-      if (eatenPoints.size() >= 0 && ghost.inPen()) {
-        System.out.println("Setting LEAVING PEN");
+      int dotLimit = 0;
+      if (i == 1) dotLimit = 7;
+      if (i == 2) dotLimit = 17;
+      if (i == 3) dotLimit = 32;
+      if (eatenPoints.size() >= dotLimit && ghost.inPen()) {
         ghost.setLeavingPen();
       }
 
       ghost.logic(delta); //moves ghost
-      System.out.println(ghost);
+    }
+
+    //check tunnels to teleport across.
+    if (pac.getPos().x < leftTunnel.x) pac.setPos(
+      rightTunnel.getPosition(new Vector2()).add(rightTunnel.width - 1f, 1f)
+    );
+    else if (
+      pac.getPos().x > ((rightTunnel.x + rightTunnel.width) - 0.5f)
+    ) pac.setPos(leftTunnel.getPosition(new Vector2()).add(0f, 1f));
+
+    for (Ghost ghost : ghosts) {
+      if (ghost.getPos().x < (leftTunnel.x - 0.5f)) ghost.setPos(
+        rightTunnel.getPosition(new Vector2()).add(rightTunnel.width - 1f, 1f)
+      );
+      else if (
+        ghost.getPos().x > ((rightTunnel.x + rightTunnel.width) - 0.5f)
+      ) ghost.setPos(leftTunnel.getPosition(new Vector2()).add(0f, 1f));
     }
 
     //collision between pac and points.
@@ -227,6 +333,72 @@ public class MyGame extends Game {
   }
 
   /**
+   * Calculates the chase target for all ghosts.
+   *
+   * we access the ghost array here so make sure its not null.
+   *
+   * @param ghostIndex lets us know which target we're calculating.
+   */
+  private Vector2 getChaseTarget(int ghostIndex) {
+    Vector2 pacPos = pac.getPos();
+    Vector2 pacVel = pac.getVel();
+    switch (ghostIndex) {
+      case 3: //clyde
+        float dist = ghosts[3].getPos().dst(pacPos);
+        if (dist < 8f) return ghosts[3].getScatterTarget();
+        else return pacPos.cpy();
+      case 2: //inky
+        Vector2 blinkyPos = ghosts[0].getPos();
+        Vector2 offset = pacVel.cpy().nor();
+        if (pacVel.nor().epsilonEquals(0f, 1f)) {
+          offset.add(-1f, 0f);
+        }
+        Vector2 intermediate = pacPos.cpy().add(offset.scl(2));
+        Vector2 diff = intermediate.cpy().sub(blinkyPos);
+        return blinkyPos.cpy().add(diff.scl(2f));
+      case 1: //pinky
+        Vector2 vectorToUse = pacVel.cpy().nor();
+        if (pacVel.nor().epsilonEquals(0f, 1f)) {
+          vectorToUse.add(-1f, 0f);
+        }
+        return pacPos.cpy().add(vectorToUse.scl(2f));
+      default: //blinky DEFAULT
+        return pac.getPos();
+    }
+  }
+
+  private void applySpeedMultipliers() {
+    float newPacSpeed = Ghost.FULL_SPEED;
+    if (ghostState == GhostState.FRIGHT) newPacSpeed *=
+      pacFrightSpeedMultiplier;
+    else newPacSpeed *= pacSpeedMultiplier;
+
+    pac.setSpeed(newPacSpeed);
+
+    for (int i = 0; i < ghosts.length; i++) {
+      Ghost ghost = ghosts[i];
+      float newGhostSpeed = Ghost.FULL_SPEED;
+
+      int candies = candyPoints.length + superCandyPoints.length;
+      int dotsLeft = candies - eatenPoints.size();
+      boolean angryOne = (i == 0 && dotsLeft <= angryModeOneDotLimit);
+      boolean angryTwo = (i == 0 && dotsLeft <= angryModeTwoDotLimit);
+
+      if (ghost.isAte()) newGhostSpeed *= ATE_SPEED_MULTIPLIER;
+      else if (
+        inLeftTunnel(ghost.getPos()) || inRightTunnel(ghost.getPos())
+      ) newGhostSpeed *= ghostTunnelSpeedMultiplier;
+      else if (ghost.isFrightened()) newGhostSpeed *=
+        ghostFrightSpeedMultiplier;
+      else if (angryTwo) newGhostSpeed *= angryModeOneSpeedMultiplier;
+      else if (angryOne) newGhostSpeed *= angryModeTwoSpeedMultiplier;
+      else newGhostSpeed *= ghostSpeedMultiplier;
+
+      ghost.setSpeed(newGhostSpeed);
+    }
+  }
+
+  /**
    * We force set fright mode whenever pac
    * eats a super.
    *
@@ -247,7 +419,7 @@ public class MyGame extends Game {
       ghostStateDurationTmp = ghostStateDuration;
     }
     ghostStateTime = 0f;
-    ghostStateDuration = 8f; //TIME FRIGHTENED
+    ghostStateDuration = 6f; //TIME FRIGHTENED
     ghostState = GhostState.FRIGHT;
   }
 
@@ -266,6 +438,10 @@ public class MyGame extends Game {
     switch (ghostState) {
       //flip back to chase.
       case SCATTER -> {
+        scatterChaseIndex += 1;
+        if (
+          scatterChaseIndex < scatterChaseIntervals.length
+        ) ghostStateDuration = scatterChaseIntervals[scatterChaseIndex];
         return GhostState.CHASE;
       }
       case FRIGHT -> {
@@ -281,6 +457,12 @@ public class MyGame extends Game {
         return ghostStateTmp;
       }
     }
+    //case CHASE
+    scatterChaseIndex += 1;
+    if (
+      scatterChaseIndex >= scatterChaseIntervals.length
+    ) return GhostState.CHASE;
+    ghostStateDuration = scatterChaseIntervals[scatterChaseIndex];
     return GhostState.SCATTER;
   }
 
@@ -290,6 +472,28 @@ public class MyGame extends Game {
    */
   private void input() {
     pac.input();
+  }
+
+  /**
+   * Returns true if the given position is in the
+   * left tunnel.
+   *
+   * @param pos the position to check if in left tunnel.
+   * @return true if position is in left tunnel.
+   */
+  private boolean inLeftTunnel(Vector2 pos) {
+    return leftTunnel.contains(pos);
+  }
+
+  /**
+   * Returns true if the given position is in the
+   * right tunnel.
+   *
+   * @param pos the position to check if in right tunnel.
+   * @return true if position is in right tunnel.
+   */
+  private boolean inRightTunnel(Vector2 pos) {
+    return rightTunnel.contains(pos);
   }
 
   /**
@@ -365,7 +569,8 @@ public class MyGame extends Game {
       Ghost ghost = ghosts[i];
       Color defColor = Color.RED;
       if (i == 1) defColor = Color.PINK;
-
+      if (i == 2) defColor = Color.CYAN;
+      if (i == 3) defColor = Color.LIME;
       if (ghost.isFrightened()) shapeRenderer.setColor(0f, 0f, 255f, 1f);
       else if (ghost.isAte()) shapeRenderer.setColor(Color.WHITE);
       else shapeRenderer.setColor(defColor);
@@ -374,14 +579,24 @@ public class MyGame extends Game {
       shapeRenderer.ellipse(ghost.getPos().x, ghost.getPos().y, 1f, 1f);
 
       //ghosts target.
-      shapeRenderer.rect(ghost.getTarget().x, ghost.getTarget().y, 1f, 1f);
+      if (i == 2) {
+        shapeRenderer.setColor(defColor);
+        shapeRenderer.rect(ghost.getTarget().x, ghost.getTarget().y, 1f, 1f);
+      }
     }
+
+    /*
+    shapeRenderer.setColor(Color.PURPLE);
+    shapeRenderer.rect(leftTunnel.x, leftTunnel.y, leftTunnel.width, leftTunnel.height);
+    shapeRenderer.rect(rightTunnel.x, rightTunnel.y, rightTunnel.width, rightTunnel.height);
+    */
 
     shapeRenderer.end();
   }
 
   @Override
   public void resize(int width, int height) {
+    super.resize(width, height);
     viewport.update(width, height, true);
   }
 
