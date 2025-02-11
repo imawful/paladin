@@ -2,6 +2,9 @@ package com.kusa.entities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Batch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.kusa.util.Point;
@@ -10,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class Ghost extends Entity {
+public class Ghost extends Entity implements Drawable {
 
   public enum GhostState {
     ENTERINGPEN,
@@ -49,6 +52,15 @@ public class Ghost extends Entity {
    */
   private GhostState state;
 
+  private TextureRegion[] upSprites;
+  private TextureRegion[] downSprites;
+  private TextureRegion[] leftSprites;
+  private TextureRegion[] rightSprites;
+  private TextureRegion[] ateSprites;
+  private TextureRegion[] frightSprites;
+
+  private float stateTime;
+
   /**
    * State of the ghosts in game.
    *
@@ -75,16 +87,56 @@ public class Ghost extends Entity {
     Vector2 scatterTarget,
     Vector2 enteringPenTarget
   ) {
+    this(
+      x,
+      y,
+      speed,
+      initialState,
+      initialGameState,
+      scatterTarget,
+      enteringPenTarget,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    );
+  }
+
+  public Ghost(
+    float x,
+    float y,
+    float speed,
+    GhostState initialState,
+    GhostState initialGameState,
+    Vector2 scatterTarget,
+    Vector2 enteringPenTarget,
+    TextureRegion[] upSprites,
+    TextureRegion[] downSprites,
+    TextureRegion[] leftSprites,
+    TextureRegion[] rightSprites,
+    TextureRegion[] ateSprites,
+    TextureRegion[] frightSprites
+  ) {
     super(x, y, speed);
     //these fields should be updated.
     target = new Vector2(0f, 0f); //this class chooses a target based on state.
     chaseTarget = new Vector2(0f, 0f); //should be set by game.
     safePos = new Vector2(0f, 0f); //this class handles this on its own.
 
+    this.stateTime = 0f;
     this.state = initialState;
     this.gameState = initialGameState;
     this.scatterTarget = scatterTarget;
     this.enteringPenTarget = enteringPenTarget;
+
+    this.upSprites = upSprites;
+    this.downSprites = downSprites;
+    this.leftSprites = leftSprites;
+    this.rightSprites = rightSprites;
+    this.ateSprites = ateSprites;
+    this.frightSprites = frightSprites;
   }
 
   public void setChaseTarget(Vector2 target) {
@@ -101,8 +153,110 @@ public class Ghost extends Entity {
    * @param delta used for any physics update that are framerate independent.
    */
   @Override
-  public void logic(float delta) {
+  public void logic(float delta, Point[] collisionPoints) {
     updateTarget();
+
+    //we pass a filtered out collision point for the ghost
+    //since we wanna bypass collisions like the ghost gate at times.
+    Point[] walls = getWalls(collisionPoints);
+
+    updateVelocity(delta, walls);
+
+    //store safe pos
+    if (!collidesWithPoints(pos, walls)) {
+      safePos.set(pos.cpy());
+      safePos.x = Math.round(safePos.x);
+      safePos.y = Math.round(safePos.y);
+    }
+
+    pos.add(vel.cpy().scl(delta));
+    if (collidesWithPoints(pos, walls)) pos.set(safePos.cpy());
+
+    stateTime += delta;
+    updateState();
+  }
+
+  @Override
+  public void draw(Batch batch) {
+    final float scale = 1.5f;
+    final float xOffset = -0.25f;
+    final float yOffset = -0.25f;
+    Vector2 dir = vel.cpy().nor();
+    boolean goingUp = dir.x == 0 && dir.y == 1;
+    boolean goingDown = dir.x == 0 && dir.y == -1;
+    boolean goingLeft = dir.x == -1 && dir.y == 0;
+    boolean goingRight = dir.x == 1 && dir.y == 0;
+
+    float intervalSpeed = 0.15f;
+    int index = (int) (stateTime / intervalSpeed);
+    if (isFrightened() && frightSprites != null) {
+      intervalSpeed = 0.5f; // or some decided flash interval.
+      index %= frightSprites.length;
+      batch.draw(frightSprites[index], pos.x, pos.y, 1.5f, 1.5f);
+    } else if (isAte() && ateSprites.length >= 4) {
+      //down, left, right, up;
+      if (goingDown) index = 0;
+      if (goingLeft) index = 1;
+      if (goingRight) index = 2;
+      else index = 3;
+      batch.draw(
+        ateSprites[index],
+        pos.x + xOffset,
+        pos.y + yOffset,
+        scale,
+        scale
+      );
+    } else if (goingUp && upSprites != null) {
+      index %= upSprites.length;
+      batch.draw(
+        upSprites[index],
+        pos.x + xOffset,
+        pos.y + yOffset,
+        scale,
+        scale
+      );
+    } else if (goingDown && downSprites != null) {
+      index %= downSprites.length;
+      batch.draw(
+        downSprites[index],
+        pos.x + xOffset,
+        pos.y + yOffset,
+        scale,
+        scale
+      );
+    } else if (goingLeft && leftSprites != null) {
+      index %= leftSprites.length;
+      batch.draw(
+        leftSprites[index],
+        pos.x + xOffset,
+        pos.y + yOffset,
+        scale,
+        scale
+      );
+    } else if (goingRight && rightSprites != null) {
+      index %= rightSprites.length;
+      batch.draw(
+        rightSprites[index],
+        pos.x + xOffset,
+        pos.y + yOffset,
+        scale,
+        scale
+      );
+    } else if (upSprites != null) {
+      //draw a solid sprite if no direction was matched.
+      index = 0;
+      batch.draw(
+        upSprites[index],
+        pos.x + xOffset,
+        pos.y + yOffset,
+        scale,
+        scale
+      );
+    }
+  }
+
+  @Override
+  protected void updateVelocity(float delta, Point[] collisionPoints) {
     /*
      *                    MOVEMENT
      * we check to see if we can turn with a threshold of 0.1
@@ -112,44 +266,41 @@ public class Ghost extends Entity {
     float threshold = 0.05f;
     if (speed >= (Ghost.FULL_SPEED * 1.25f)) threshold = 0.1f;
     if (canTurn(threshold)) {
-      snap();
-      vel.set(calcVelocity(delta));
+      pos.set(snap(pos));
+      vel.set(findNextVelocity(delta, collisionPoints));
     }
-
-    Point[] walls = getWalls();
-    if (!collidesWithWall(pos, walls)) {
-      safePos.set(pos.cpy());
-      safePos.x = Math.round(safePos.x);
-      safePos.y = Math.round(safePos.y);
-    }
-
-    pos.add(vel.cpy().scl(delta));
-
-    if (collidesWithWall(pos, walls)) pos.set(safePos.cpy());
-
-    updateState();
   }
 
-  private Point[] getWalls() {
+  /**
+   * we are hardcoding the ghost gates coordinates here
+   * so maybe come back to this.
+   *
+   *
+   * @param collisionPoints the collision points given from logic method.
+   */
+  private Point[] getWalls(Point[] collisionPoints) {
     boolean ignoreGate =
       (state == GhostState.LEAVINGPEN || state == GhostState.ENTERINGPEN);
     Point[] walls = ignoreGate
-      ? Arrays.stream(Entity.walls)
+      ? Arrays.stream(collisionPoints)
         .filter(wall ->
           ((wall.getX() != 13f && wall.getY() != (30f - 12f)) &&
             (wall.getX() != 14f && wall.getY() != (30f - 12f)))
         )
         .toArray(Point[]::new)
-      : Entity.walls;
+      : collisionPoints;
     return walls;
   }
 
+  /**
+   * rounding the points and checking equality worked well for the ghosts.
+   */
   @Override
-  protected boolean collidesWithWall(Vector2 pos_, Point[] walls) {
+  protected boolean collidesWithPoints(Vector2 pos_, Point[] collisionPoints) {
     Rectangle posRect = new Rectangle(pos_.x, pos_.y, 1f, 1f);
-    for (Point w : walls) if (
-      (Math.round(pos_.x) == Math.round(w.getX())) &&
-      (Math.round(pos_.y) == Math.round(w.getY()))
+    for (Point point : collisionPoints) if (
+      (Math.round(pos_.x) == Math.round(point.getX())) &&
+      (Math.round(pos_.y) == Math.round(point.getY()))
     ) return true;
     return false;
   }
@@ -191,7 +342,10 @@ public class Ghost extends Entity {
     boolean reachedTarget = reachedTarget();
     switch (state) {
       case ENTERINGPEN:
-        if (reachedTarget) state = GhostState.INPEN;
+        if (reachedTarget) {
+          state = GhostState.INPEN;
+          stateTime = 0f;
+        }
         break;
       case INPEN:
         //game is responsible for moving ghost from
@@ -201,18 +355,21 @@ public class Ghost extends Entity {
         if (reachedTarget) {
           pos.set(ATE_TARGET);
           state = gameState;
+          stateTime = 0f;
         }
         break;
       case SCATTER:
         if (gameState != GhostState.SCATTER) {
           vel.scl(-1);
           state = gameState;
+          stateTime = 0f;
         }
         break;
       case CHASE:
         if (gameState != GhostState.CHASE) {
           vel.scl(-1);
           state = gameState;
+          stateTime = 0f;
         }
         break;
       case FRIGHT:
@@ -220,7 +377,11 @@ public class Ghost extends Entity {
         //the frightened mode on ghosts.
         break;
       case ATE:
-        if (reachedTarget) state = GhostState.ENTERINGPEN;
+        if (reachedTarget) {
+          pos.set(ATE_TARGET);
+          state = GhostState.ENTERINGPEN;
+          stateTime = 0f;
+        }
         break;
     }
   }
@@ -259,36 +420,33 @@ public class Ghost extends Entity {
    * @param delta used to scale the movement applied to our position.
    * @return Vector2 the updated velocity.
    */
-  private Vector2 calcVelocity(float delta) {
+  private Vector2 findNextVelocity(float delta, Point[] walls) {
     Map<Float, Vector2> distToVel = new HashMap<>();
-
     Vector2 opp = vel.cpy().scl(-1).nor();
-
-    Point[] walls = getWalls();
 
     Vector2 upPos = pos.cpy().add(0f, 1f);
     Vector2 upVel = new Vector2(0f, 1f).scl(speed);
-    if (!collidesWithWall(upPos, walls) && !opp.epsilonEquals(0f, 1f)) {
+    if (!collidesWithPoints(upPos, walls) && !opp.epsilonEquals(0f, 1f)) {
       float dist = upPos.dst(target);
       distToVel.put(dist, upVel);
     }
     Vector2 leftPos = pos.cpy().add(-1f, 0f);
     Vector2 leftVel = new Vector2(-1f, 0f).scl(speed);
-    if (!collidesWithWall(leftPos, walls) && !opp.epsilonEquals(-1f, 0f)) {
+    if (!collidesWithPoints(leftPos, walls) && !opp.epsilonEquals(-1f, 0f)) {
       float dist = leftPos.dst(target);
       distToVel.put(dist, leftVel);
     }
 
     Vector2 downPos = pos.cpy().add(0f, -1f);
     Vector2 downVel = new Vector2(0f, -1f).scl(speed);
-    if (!collidesWithWall(downPos, walls) && !opp.epsilonEquals(0f, -1f)) {
+    if (!collidesWithPoints(downPos, walls) && !opp.epsilonEquals(0f, -1f)) {
       float dist = downPos.dst(target);
       distToVel.put(dist, downVel);
     }
 
     Vector2 rightPos = pos.cpy().add(1f, 0f);
     Vector2 rightVel = new Vector2(1f, 0f).scl(speed);
-    if (!collidesWithWall(rightPos, walls) && !opp.epsilonEquals(1f, 0f)) {
+    if (!collidesWithPoints(rightPos, walls) && !opp.epsilonEquals(1f, 0f)) {
       float dist = rightPos.dst(target);
       distToVel.put(dist, rightVel);
     }
@@ -314,6 +472,7 @@ public class Ghost extends Entity {
   public void setFrightened(boolean fright) {
     if (!fright && isFrightened()) {
       state = gameState;
+      stateTime = 0f;
       return;
     }
 
@@ -324,6 +483,7 @@ public class Ghost extends Entity {
     if (fright && canBeFrightened) {
       vel.scl(-1);
       state = GhostState.FRIGHT;
+      stateTime = 0f;
     }
   }
 
@@ -331,14 +491,20 @@ public class Ghost extends Entity {
    * Sets the ghost state to ate if possible.
    */
   public void setAte() {
-    if (isFrightened()) state = GhostState.ATE;
+    if (isFrightened()) {
+      state = GhostState.ATE;
+      stateTime = 0f;
+    }
   }
 
   /**
    * Sets the ghost state to leaving pen if possible.
    */
   public void setLeavingPen() {
-    if (inPen()) state = GhostState.LEAVINGPEN;
+    if (inPen()) {
+      state = GhostState.LEAVINGPEN;
+      stateTime = 0f;
+    }
   }
 
   /**
