@@ -3,17 +3,9 @@ package com.kusa.entities;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.kusa.util.Point;
+import java.util.List;
 
 public abstract class Entity {
-
-  /**
-   * Reference to the maze from the game class.
-   *
-   * All entities will use this reference for
-   * checking collisions. this array only
-   * contains the 'walls' for collision purposes.
-   */
-  protected static Point[] walls;
 
   /**
    * Entities position vector.
@@ -58,9 +50,14 @@ public abstract class Entity {
    *
    * @param delta used for any physics update that are framerate independent.
    */
-  public abstract void logic(float delta);
+  public abstract void logic(float delta, Point[] collisionPoints);
 
-  protected abstract boolean collidesWithWall(Vector2 pos_, Point[] walls);
+  protected abstract void updateVelocity(float delta, Point[] collisionPoints);
+
+  protected abstract boolean collidesWithPoints(
+    Vector2 pos_,
+    Point[] collisionPoints
+  );
 
   /**
    * Gets the vector of entity's position.
@@ -107,24 +104,18 @@ public abstract class Entity {
   }
 
   /**
-   * Updates position of entity to nearest tile.
+   * Returns the vector rounded to the nearest int.
    *
+   * uses Math.round()
    * position's x and y are rounded to nearest integer.
+   *
+   * @param posisiton the vector you want to round.
+   * @return Vector2 with rounded x and y values.
    */
-  public void snap() {
+  public static Vector2 snap(Vector2 position) {
+    Vector2 pos = position.cpy();
     pos.x = Math.round(pos.x);
     pos.y = Math.round(pos.y);
-  }
-
-  /**
-   * Sets the "walls" refrence for entities.
-   *
-   * Should be set by the game or screen during intial construction.
-   * Enities need a valid set of walls so make sure one is set early.
-   *
-   * @param walls array of points representing the maze.
-   */
-  public static void setWalls(Point[] walls) {
-    Entity.walls = walls;
+    return pos;
   }
 }
