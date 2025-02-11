@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType;
 import com.badlogic.gdx.maps.MapLayer;
@@ -39,6 +40,45 @@ public class MyGame extends Game {
   private ExtendViewport viewport;
   private OrthographicCamera camera;
   private OrthogonalTiledMapRenderer mapRenderer;
+
+  //sprite sheets.
+  Texture pacSpriteSheet;
+
+  TextureRegion[] pacDownSprites;
+  TextureRegion[] pacLeftSprites;
+  TextureRegion[] pacRightSprites;
+  TextureRegion[] pacUpSprites;
+
+  Texture blinkySpriteSheet;
+  TextureRegion[] blinkyDownSprites;
+  TextureRegion[] blinkyLeftSprites;
+  TextureRegion[] blinkyRightSprites;
+  TextureRegion[] blinkyUpSprites;
+
+  Texture pinkySpriteSheet;
+  TextureRegion[] pinkyDownSprites;
+  TextureRegion[] pinkyLeftSprites;
+  TextureRegion[] pinkyRightSprites;
+  TextureRegion[] pinkyUpSprites;
+
+  Texture inkySpriteSheet;
+  TextureRegion[] inkyDownSprites;
+  TextureRegion[] inkyLeftSprites;
+  TextureRegion[] inkyRightSprites;
+  TextureRegion[] inkyUpSprites;
+
+  Texture clydeSpriteSheet;
+  TextureRegion[] clydeDownSprites;
+  TextureRegion[] clydeLeftSprites;
+  TextureRegion[] clydeRightSprites;
+  TextureRegion[] clydeUpSprites;
+
+  //shared between ghosts.
+  Texture ghostAteSpriteSheet;
+  TextureRegion[] ghostAteSprites;
+
+  Texture ghostFrightSpriteSheet;
+  TextureRegion[] ghostFrightSprites;
 
   //game enviornment
   private TiledMap mazeMap;
@@ -107,9 +147,19 @@ public class MyGame extends Game {
 
     //setup maze array's.
     initMaze();
-    Entity.setWalls(wallPoints);
 
-    pac = new Pac(13f, 30f - 23f);
+    //setup sprites (or assets ig?)
+    initSprites();
+
+    pac = new Pac(
+      13f,
+      30f - 23f,
+      Ghost.FULL_SPEED,
+      pacUpSprites,
+      pacDownSprites,
+      pacLeftSprites,
+      pacRightSprites
+    );
 
     ghosts = new Ghost[] {
       new Ghost(
@@ -119,7 +169,13 @@ public class MyGame extends Game {
         GhostState.SCATTER,
         GhostState.SCATTER,
         new Vector2(25f, 30f - (-3f)),
-        new Vector2(11f, 30f - (14f))
+        new Vector2(11f, 30f - (15f)),
+        blinkyUpSprites,
+        blinkyDownSprites,
+        blinkyLeftSprites,
+        blinkyRightSprites,
+        ghostAteSprites,
+        ghostFrightSprites
       ), //blinky
       new Ghost(
         12f,
@@ -128,7 +184,13 @@ public class MyGame extends Game {
         GhostState.INPEN,
         GhostState.SCATTER,
         new Vector2(2f, 30f - (-3f)),
-        new Vector2(12f, 30f - (14f))
+        new Vector2(12f, 30f - (15f)),
+        pinkyUpSprites,
+        pinkyDownSprites,
+        pinkyLeftSprites,
+        pinkyRightSprites,
+        ghostAteSprites,
+        ghostFrightSprites
       ), //pinky
       new Ghost(
         14f,
@@ -137,7 +199,13 @@ public class MyGame extends Game {
         GhostState.INPEN,
         GhostState.SCATTER,
         new Vector2(28f, 30f - (35f)),
-        new Vector2(14f, 30f - (14f))
+        new Vector2(14f, 30f - (15f)),
+        inkyUpSprites,
+        inkyDownSprites,
+        inkyLeftSprites,
+        inkyRightSprites,
+        ghostAteSprites,
+        ghostFrightSprites
       ), //inky
       new Ghost(
         16f,
@@ -146,7 +214,13 @@ public class MyGame extends Game {
         GhostState.INPEN,
         GhostState.SCATTER,
         new Vector2(-1f, 30f - (33f)),
-        new Vector2(16f, 30f - (14f))
+        new Vector2(16f, 30f - (15f)),
+        clydeUpSprites,
+        clydeDownSprites,
+        clydeLeftSprites,
+        clydeRightSprites,
+        ghostAteSprites,
+        ghostFrightSprites
       ), //clyde
     };
     pacRect = new Rectangle(pac.getPos().x, pac.getPos().y, 1f, 1f);
@@ -233,6 +307,123 @@ public class MyGame extends Game {
     this.rightTunnel = new Rectangle(23f, (30f - 15f), 5f, 3f);
   }
 
+  private void initSprites() {
+    //pacs sprites.
+    pacSpriteSheet = new Texture("pac/sprite-sheet.png");
+    TextureRegion solidPac = new TextureRegion(pacSpriteSheet, 0, 300, 20, 20);
+    pacDownSprites = new TextureRegion[] {
+      solidPac,
+      new TextureRegion(pacSpriteSheet, 0, 0, 20, 20),
+      new TextureRegion(pacSpriteSheet, 0, 20, 20, 20),
+    };
+    pacLeftSprites = new TextureRegion[] {
+      solidPac,
+      new TextureRegion(pacSpriteSheet, 0, 40, 20, 20),
+      new TextureRegion(pacSpriteSheet, 0, 60, 20, 20),
+    };
+    pacRightSprites = new TextureRegion[] {
+      solidPac,
+      new TextureRegion(pacSpriteSheet, 0, 80, 20, 20),
+      new TextureRegion(pacSpriteSheet, 0, 100, 20, 20),
+    };
+    pacUpSprites = new TextureRegion[] {
+      solidPac,
+      new TextureRegion(pacSpriteSheet, 0, 140, 20, 20),
+      new TextureRegion(pacSpriteSheet, 0, 160, 20, 20),
+    };
+
+    blinkySpriteSheet = new Texture("ghosts/blinky-sprite-sheet.png");
+    blinkyDownSprites = new TextureRegion[] {
+      new TextureRegion(blinkySpriteSheet, 0, 0, 20, 20),
+      new TextureRegion(blinkySpriteSheet, 0, 20, 20, 20),
+    };
+    blinkyLeftSprites = new TextureRegion[] {
+      new TextureRegion(blinkySpriteSheet, 0, 40, 20, 20),
+      new TextureRegion(blinkySpriteSheet, 0, 60, 20, 20),
+    };
+    blinkyRightSprites = new TextureRegion[] {
+      new TextureRegion(blinkySpriteSheet, 0, 80, 20, 20),
+      new TextureRegion(blinkySpriteSheet, 0, 100, 20, 20),
+    };
+    blinkyUpSprites = new TextureRegion[] {
+      new TextureRegion(blinkySpriteSheet, 0, 120, 20, 20),
+      new TextureRegion(blinkySpriteSheet, 0, 140, 20, 20),
+    };
+
+    pinkySpriteSheet = new Texture("ghosts/pinky-sprite-sheet.png");
+    pinkyDownSprites = new TextureRegion[] {
+      new TextureRegion(pinkySpriteSheet, 0, 0, 20, 20),
+      new TextureRegion(pinkySpriteSheet, 0, 20, 20, 20),
+    };
+    pinkyLeftSprites = new TextureRegion[] {
+      new TextureRegion(pinkySpriteSheet, 0, 40, 20, 20),
+      new TextureRegion(pinkySpriteSheet, 0, 60, 20, 20),
+    };
+    pinkyRightSprites = new TextureRegion[] {
+      new TextureRegion(pinkySpriteSheet, 0, 80, 20, 20),
+      new TextureRegion(pinkySpriteSheet, 0, 100, 20, 20),
+    };
+    pinkyUpSprites = new TextureRegion[] {
+      new TextureRegion(pinkySpriteSheet, 0, 120, 20, 20),
+      new TextureRegion(pinkySpriteSheet, 0, 140, 20, 20),
+    };
+
+    inkySpriteSheet = new Texture("ghosts/inky-sprite-sheet.png");
+    inkyDownSprites = new TextureRegion[] {
+      new TextureRegion(inkySpriteSheet, 0, 0, 20, 20),
+      new TextureRegion(inkySpriteSheet, 0, 20, 20, 20),
+    };
+    inkyLeftSprites = new TextureRegion[] {
+      new TextureRegion(inkySpriteSheet, 0, 40, 20, 20),
+      new TextureRegion(inkySpriteSheet, 0, 60, 20, 20),
+    };
+    inkyRightSprites = new TextureRegion[] {
+      new TextureRegion(inkySpriteSheet, 0, 80, 20, 20),
+      new TextureRegion(inkySpriteSheet, 0, 100, 20, 20),
+    };
+    inkyUpSprites = new TextureRegion[] {
+      new TextureRegion(inkySpriteSheet, 0, 120, 20, 20),
+      new TextureRegion(inkySpriteSheet, 0, 140, 20, 20),
+    };
+
+    clydeSpriteSheet = new Texture("ghosts/clyde-sprite-sheet.png");
+    clydeDownSprites = new TextureRegion[] {
+      new TextureRegion(clydeSpriteSheet, 0, 0, 20, 20),
+      new TextureRegion(clydeSpriteSheet, 0, 20, 20, 20),
+    };
+    clydeLeftSprites = new TextureRegion[] {
+      new TextureRegion(clydeSpriteSheet, 0, 40, 20, 20),
+      new TextureRegion(clydeSpriteSheet, 0, 60, 20, 20),
+    };
+    clydeRightSprites = new TextureRegion[] {
+      new TextureRegion(clydeSpriteSheet, 0, 80, 20, 20),
+      new TextureRegion(clydeSpriteSheet, 0, 100, 20, 20),
+    };
+    clydeUpSprites = new TextureRegion[] {
+      new TextureRegion(clydeSpriteSheet, 0, 120, 20, 20),
+      new TextureRegion(clydeSpriteSheet, 0, 140, 20, 20),
+    };
+
+    ghostAteSpriteSheet = new Texture("ghosts/ate-sprite-sheet.png");
+    ghostAteSprites = new TextureRegion[] {
+      new TextureRegion(ghostAteSpriteSheet, 0, 0, 20, 20), //down
+      new TextureRegion(ghostAteSpriteSheet, 0, 20, 20, 20), //left
+      new TextureRegion(ghostAteSpriteSheet, 0, 40, 20, 20), //right
+      new TextureRegion(ghostAteSpriteSheet, 0, 60, 20, 20), //up
+    };
+
+    //first two sprites are regular blue frightened.
+    // last 2 are lightly colored (for flashes)
+    // this sheet isn't direction specific.
+    ghostFrightSpriteSheet = new Texture("ghosts/fright-sprite-sheet.png");
+    ghostFrightSprites = new TextureRegion[] {
+      new TextureRegion(ghostFrightSpriteSheet, 0, 40, 20, 20),
+      new TextureRegion(ghostFrightSpriteSheet, 0, 60, 20, 20),
+      new TextureRegion(ghostFrightSpriteSheet, 0, 0, 20, 20),
+      new TextureRegion(ghostFrightSpriteSheet, 0, 20, 20, 20),
+    };
+  }
+
   /**
    * Calls logic method for any game entities
    * which require it.
@@ -250,7 +441,7 @@ public class MyGame extends Game {
     applySpeedMultipliers();
 
     //entities logic.
-    pac.logic(delta); //moves pac
+    pac.logic(delta, wallPoints); //moves pac
 
     //game has little control over
     //ghost state here including their
@@ -276,7 +467,7 @@ public class MyGame extends Game {
         ghost.setLeavingPen();
       }
 
-      ghost.logic(delta); //moves ghost
+      ghost.logic(delta, wallPoints); //moves ghost
     }
 
     //check tunnels to teleport across.
@@ -523,10 +714,6 @@ public class MyGame extends Game {
     camera.position.set(28f / 2f, 31f / 2f, 0);
     camera.update();
 
-    batch.setProjectionMatrix(camera.combined);
-    batch.begin();
-    batch.end();
-
     //render maze
     mapRenderer.setView(camera);
     mapRenderer.render();
@@ -559,12 +746,21 @@ public class MyGame extends Game {
       );
     }
 
+    shapeRenderer.end();
+
+    batch.setProjectionMatrix(camera.combined);
+    batch.begin();
+
     //render pac
+    /*
     shapeRenderer.setColor(255f, 255f, 0f, 1f);
     Vector2 pacpos = pac.getPos();
     shapeRenderer.ellipse(pacpos.x, pacpos.y, 1f, 1f);
+    */
+    pac.draw(batch);
 
-    //render blinky
+    //render ghosts
+    /*
     for (int i = 0; i < ghosts.length; i++) {
       Ghost ghost = ghosts[i];
       Color defColor = Color.RED;
@@ -584,14 +780,10 @@ public class MyGame extends Game {
         shapeRenderer.rect(ghost.getTarget().x, ghost.getTarget().y, 1f, 1f);
       }
     }
-
-    /*
-    shapeRenderer.setColor(Color.PURPLE);
-    shapeRenderer.rect(leftTunnel.x, leftTunnel.y, leftTunnel.width, leftTunnel.height);
-    shapeRenderer.rect(rightTunnel.x, rightTunnel.y, rightTunnel.width, rightTunnel.height);
     */
+    for (Ghost ghost : ghosts) ghost.draw(batch);
 
-    shapeRenderer.end();
+    batch.end();
   }
 
   @Override
@@ -604,5 +796,12 @@ public class MyGame extends Game {
   public void dispose() {
     super.dispose();
     if (batch != null) batch.dispose();
+    if (pacSpriteSheet != null) pacSpriteSheet.dispose();
+    if (blinkySpriteSheet != null) blinkySpriteSheet.dispose();
+    if (pinkySpriteSheet != null) pinkySpriteSheet.dispose();
+    if (inkySpriteSheet != null) inkySpriteSheet.dispose();
+    if (clydeSpriteSheet != null) clydeSpriteSheet.dispose();
+    if (ghostAteSpriteSheet != null) ghostAteSpriteSheet.dispose();
+    if (ghostFrightSpriteSheet != null) ghostFrightSpriteSheet.dispose();
   }
 }
