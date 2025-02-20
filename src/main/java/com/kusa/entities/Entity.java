@@ -23,6 +23,12 @@ public abstract class Entity {
   protected float speed;
 
   /**
+   * State time we use to track time for entities state.
+   * if you need more than one state time reconsider the entity logic.
+   */
+  protected float stateTime;
+
+  /**
    * Constructs an entity with an x and y value and default speed (1f).
    *
    * @param x x position of entity.
@@ -43,6 +49,7 @@ public abstract class Entity {
     pos = new Vector2(x, y);
     vel = new Vector2(0f, 0f);
     this.speed = speed;
+    this.stateTime = 0f;
   }
 
   /**
@@ -50,14 +57,7 @@ public abstract class Entity {
    *
    * @param delta used for any physics update that are framerate independent.
    */
-  public abstract void logic(float delta, Point[] collisionPoints);
-
-  protected abstract void updateVelocity(float delta, Point[] collisionPoints);
-
-  protected abstract boolean collidesWithPoints(
-    Vector2 pos_,
-    Point[] collisionPoints
-  );
+  public abstract void logic(float delta);
 
   /**
    * Gets the vector of entity's position.
@@ -104,6 +104,14 @@ public abstract class Entity {
   }
 
   /**
+   * Gets the state time for entity.
+   * @return float, time entity has spent in it's current state.
+   */
+  public float getStateTime() {
+    return this.stateTime;
+  }
+
+  /**
    * Returns the vector rounded to the nearest int.
    *
    * uses Math.round()
@@ -117,5 +125,13 @@ public abstract class Entity {
     pos.x = Math.round(pos.x);
     pos.y = Math.round(pos.y);
     return pos;
+  }
+
+  /*MAKE STATIC*/
+  protected boolean canSnap(float threshold) {
+    return (
+      (Math.abs(pos.x - Math.round(pos.x)) < threshold) &&
+      (Math.abs(pos.y - Math.round(pos.y)) < threshold)
+    );
   }
 }
