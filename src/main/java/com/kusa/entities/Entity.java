@@ -29,6 +29,12 @@ public abstract class Entity {
   protected float stateTime;
 
   /**
+   * Spawn point, entitys posistion when first created.
+   * can be set or updated as needed.
+   */
+  protected Vector2 spawn;
+
+  /**
    * Constructs an entity with an x and y value and default speed (1f).
    *
    * @param x x position of entity.
@@ -47,6 +53,7 @@ public abstract class Entity {
    */
   public Entity(float x, float y, float speed) {
     pos = new Vector2(x, y);
+    spawn = new Vector2(x, y);
     vel = new Vector2(0f, 0f);
     this.speed = speed;
     this.stateTime = 0f;
@@ -85,6 +92,31 @@ public abstract class Entity {
   }
 
   /**
+   * Sets the vector of entitys velocity.
+   *
+   * use carefully!
+   */
+  public void setVel(Vector2 pVel) {
+    this.vel.set(pVel);
+  }
+
+  /**
+   * Gets the spawn point of entity.
+   * @return vector2 representing this entities spawn position.
+   */
+  public Vector2 getSpawn() {
+    return this.spawn.cpy();
+  }
+
+  /**
+   * Sets the spawn point of entity.
+   * @param pos vector2 representing entitys new spawn point.
+   */
+  public void setSpawn(Vector2 pos) {
+    this.spawn.set(pos);
+  }
+
+  /**
    * Gets the current speed of entity.
    * speed is represented in pixels per second.
    *
@@ -109,6 +141,16 @@ public abstract class Entity {
    */
   public float getStateTime() {
     return this.stateTime;
+  }
+
+  /**
+   * Set the state time for entity.
+   * use this carefully!
+   * only made it to zero out state times.
+   * @param time new state time for entity.
+   */
+  public void setStateTime(float time) {
+    this.stateTime = time;
   }
 
   /**
