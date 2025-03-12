@@ -20,6 +20,10 @@ public class GameState {
   private boolean pacIsEating;
   private float pacChompTime;
 
+  private boolean starting;
+  private float startTime;
+  private float startDuration;
+
   /**
    * maybe make this class manage the game state.
    *
@@ -41,6 +45,10 @@ public class GameState {
     //entity data
     pacIsEating = false;
     pacChompTime = 0f;
+
+    starting = true;
+    startTime = 0f;
+    startDuration = 5f;
   }
 
   public boolean isFrightState() {
@@ -84,6 +92,15 @@ public class GameState {
   }
 
   public void update(float delta) {
+    if (starting) {
+      if (startTime >= startDuration) {
+        startTime = 0f;
+        starting = false;
+      }
+      startTime += delta;
+      return;
+    }
+
     if (ghostStateTime >= ghostStateDuration) {
       ghostStateTime = 0f;
       ghostState = nextGhostState();
@@ -147,8 +164,9 @@ public class GameState {
     boolean angryTwo =
       (allowAngry && dotsLeft <= levelData.getAngryModeTwoDotLimit());
     if (ghost.isAte()) newGhostSpeed *= levelData.getAteSpeedMultiplier();
-    else if (maze.inTunnel(ghost.getPos())) newGhostSpeed *=
-      levelData.getGhostTunnelSpeedMultiplier();
+    else if (
+      maze.inTunnel(ghost.getPos()) || ghost.isLeavingPen() || ghost.inPen()
+    ) newGhostSpeed *= levelData.getGhostTunnelSpeedMultiplier();
     else if (ghost.isFrightened()) newGhostSpeed *=
       levelData.getGhostFrightSpeedMultiplier();
     else if (angryTwo) newGhostSpeed *=
@@ -173,6 +191,15 @@ public class GameState {
 
   public void pacAteSuper() {
     pacChompTime = 0f;
+  }
+
+  public void setStarting() {
+    starting = true;
+    startTime = 0f;
+  }
+
+  public boolean isStarting() {
+    return starting;
   }
 
   public boolean getPacIsEating() {
