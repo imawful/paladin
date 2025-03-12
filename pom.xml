@@ -156,11 +156,45 @@
         <version>3.3.0</version>
       </plugin>
 
-      <!-- might get rid of -->
       <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.4.2</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.4.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.MF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>META-INF/LICENSE</exclude>
+                    <exclude>META-INF/LGPL2.1</exclude>
+                    <exclude>META-INF/AL2.0</exclude>
+                    <exclude>META-INF.versions.9.module-info</exclude>
+                    <exclude>META-INF/*.module-info</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Main-Class>com.kusa.App</Main-Class>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
+
+
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
