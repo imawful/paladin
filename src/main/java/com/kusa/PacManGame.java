@@ -19,6 +19,8 @@ public class PacManGame {
   //SOUNDS.
   private Sound pacChomp;
   private long pacChompID;
+  private Sound pacDeath;
+  private boolean pacDeathPlaying;
 
   //game enviornment
   private Maze maze;
@@ -33,6 +35,10 @@ public class PacManGame {
 
   //holds state + level data.
   private GameState gameState;
+
+  private boolean died;
+  private float diedTime;
+  private float diedDuration;
 
   public PacManGame(Maze maze) {
     this.maze = maze;
@@ -88,11 +94,19 @@ public class PacManGame {
       0.8f
     );
 
+    died = false;
+    diedTime = 0f;
+    diedDuration = 2f;
+
     //MOVE THIS. we should NOT be playing sounds in this class!!!!
     this.pacChomp = Gdx.audio.newSound(
       Gdx.files.internal("sounds/pacman_chomp.wav")
     );
     this.pacChompID = -1;
+    this.pacDeath = Gdx.audio.newSound(
+      Gdx.files.internal("sounds/pacman_death.mp3")
+    );
+    this.pacDeathPlaying = false;
   }
 
   public Entity getPac() {
@@ -103,12 +117,43 @@ public class PacManGame {
     return this.ghosts;
   }
 
+  public boolean pacDying() {
+    return this.died;
+  }
+
+  public boolean isStarting() {
+    return gameState.isStarting();
+  }
+
+  public float getDiedTime() {
+    return this.diedTime;
+  }
+
   /**
    * General game simulation update.
    */
   public void update(float delta) {
+    if (died) {
+      if (pacChompID != -1) pacChomp.pause(pacChompID);
+
+      if (!pacDeathPlaying) {
+        pacDeath.play();
+        pacDeathPlaying = true;
+      }
+
+      if (diedTime > diedDuration) {
+        diedTime = 0f;
+        pacHit();
+        died = false;
+        pacDeathPlaying = false;
+        pacDeath.stop();
+      }
+      diedTime += delta;
+      return;
+    }
     //updates the game state (timers, data we pull, ...)
     gameState.update(delta);
+    if (gameState.isStarting()) return;
 
     //sets speed of pac and ghosts.
     updateSpeed();
@@ -137,6 +182,7 @@ public class PacManGame {
 
   public void dispose() {
     if (pacChomp != null) pacChomp.dispose();
+    if (pacDeath != null) pacDeath.dispose();
   }
 
   private void updateSpeed() {
@@ -151,6 +197,16 @@ public class PacManGame {
     }
   }
 
+  private void pacHit() {
+    pac.setPos(pac.getSpawn());
+    pac.setVel(new Vector2(0f, 0f));
+    pac.setStateTime(0f);
+
+    for (Ghost ghost : ghosts) ghost.setStart();
+
+    gameState.setStarting();
+  }
+
   private void updateEntities(float delta) {
     pac.input(); //TODO fix this!!! (should be called elsewhere?)
     pac.logic(delta); //moves pac
@@ -158,6 +214,7 @@ public class PacManGame {
     //game has little control over
     //ghost state here including their
     //target.
+    boolean ghostLeaving = false; //used for making ghosts leave 1 at a time.
     for (int i = 0; i < ghosts.length; i++) {
       Ghost ghost = ghosts[i];
 
@@ -179,9 +236,11 @@ public class PacManGame {
       if (i == 1) dotLimit = 7;
       if (i == 2) dotLimit = 17;
       if (i == 3) dotLimit = 32;
-      if (eatenCandy >= dotLimit && ghost.inPen()) {
+      if (eatenCandy >= dotLimit && ghost.inPen() && !ghostLeaving) {
         ghost.setLeavingPen();
       }
+
+      if (ghost.isLeavingPen()) ghostLeaving = true;
 
       ghost.logic(delta); //moves ghost
     }
@@ -229,10 +288,8 @@ public class PacManGame {
     for (Ghost ghost : ghosts) {
       ghostRect.setPosition(ghost.getPos());
       if (ghostRect.overlaps(pacRect)) {
-        if (
-          ghost.isFrightened() || ghost.isAte()
-        ) ghost.setAte(); // we check atte also so no false cases //ghost will handle if they can be set to ate state.
-        else System.out.println("GAME OVERR");
+        if (ghost.isFrightened() || ghost.isAte()) ghost.setAte(); // we check atte also so no false cases //ghost will handle if they can be set to ate state.
+        else died = true; //pacHit();//System.out.println("GAME OVERR");
       }
     }
   }
