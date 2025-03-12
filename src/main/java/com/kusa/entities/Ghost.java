@@ -47,6 +47,11 @@ public class Ghost extends Entity {
   private GhostState state;
 
   /**
+   * State ghost should be in at start of each level.
+   */
+  private GhostState startState;
+
+  /**
    * State of the ghosts in game.
    *
    * Since we sometimes cannot transition to
@@ -80,6 +85,7 @@ public class Ghost extends Entity {
     chaseTarget = new Vector2(0f, 0f); //should be set by game.
 
     this.state = initialState;
+    this.startState = initialState;
     this.gameState = initialGameState;
     this.scatterTarget = scatterTarget;
     this.enteringPenTarget = enteringPenTarget;
@@ -308,6 +314,16 @@ public class Ghost extends Entity {
   }
 
   /**
+   * Ghost sets up for a start of a level.
+   */
+  public void setStart() {
+    state = startState;
+    stateTime = 0f;
+    pos.set(spawn);
+    updateTarget();
+  }
+
+  /**
    * Returns true if ghost state is INPEN
    *
    * @return true if this.state == GhostState.INPEN
@@ -323,6 +339,14 @@ public class Ghost extends Entity {
    */
   public boolean isFrightened() {
     return state == GhostState.FRIGHT;
+  }
+
+  /**
+   * Returns true if ghost state is LEAVINGPEN
+   * @return true if this.state == GhostState.LEAVINGPEN
+   */
+  public boolean isLeavingPen() {
+    return state == GhostState.LEAVINGPEN;
   }
 
   /**
