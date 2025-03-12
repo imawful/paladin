@@ -70,6 +70,10 @@ public class MyGame extends Game {
   Texture ghostFrightSpriteSheet;
   TextureRegion[] ghostFrightSprites;
 
+  Texture candySprite;
+  Texture superCandySprite;
+  Texture readySprite;
+
   //game enviornment
   private TileMapMaze maze;
 
@@ -217,6 +221,10 @@ public class MyGame extends Game {
       new TextureRegion(ghostFrightSpriteSheet, 0, 0, 20, 20),
       new TextureRegion(ghostFrightSpriteSheet, 0, 20, 20, 20),
     };
+
+    candySprite = new Texture("map/pellet.png");
+    superCandySprite = new Texture("map/super-pellet.png");
+    readySprite = new Texture("map/ready.png");
   }
 
   /**
@@ -249,6 +257,7 @@ public class MyGame extends Game {
     mapRenderer.setView(camera);
     mapRenderer.render();
 
+    /*
     shapeRenderer.setProjectionMatrix(camera.combined);
     shapeRenderer.begin(ShapeType.Filled);
 
@@ -257,7 +266,7 @@ public class MyGame extends Game {
       for (int j = 0; j < 31; j++) {
         shapeRenderer.setColor(Color.GOLD.mul(Color.WHITE));
         if (maze.isCandy(i, j)) {
-          shapeRenderer.ellipse(i + 0.3f, j + 0.2f, 0.5f, 0.5f);
+          //shapeRenderer.ellipse(i + 0.3f, j + 0.2f, 0.5f, 0.5f);
         }
         shapeRenderer.setColor(Color.GOLDENROD.mul(Color.WHITE));
         if (maze.isSuperCandy(i, j)) shapeRenderer.ellipse(i, j, 1.25f, 1.25f);
@@ -265,11 +274,27 @@ public class MyGame extends Game {
     }
 
     shapeRenderer.end();
+    */
 
+    /* batch draw order
+     * - pellets BOTTOM LAYER
+     * - ghosts
+     * - pac
+     * - hud (ready screen only rn) TOP LAYER
+     */
     batch.setProjectionMatrix(camera.combined);
     batch.begin();
 
-    renderPac(game.getPac());
+    for (int i = 0; i < 28; i++) {
+      for (int j = 0; j < 31; j++) {
+        if (maze.isCandy(i, j)) {
+          batch.draw(candySprite, i, j, 1, 1);
+        }
+        if (maze.isSuperCandy(i, j)) {
+          batch.draw(superCandySprite, i, j, 1, 1);
+        }
+      }
+    }
 
     for (int i = 0; i < game.getGhosts().length; i++) {
       Ghost g = game.getGhosts()[i];
@@ -279,17 +304,36 @@ public class MyGame extends Game {
       else renderBlinky(g);
     }
 
+    renderPac(game.getPac());
+
+    if (game.isStarting()) batch.draw(readySprite, 11, 12, 7, 2);
+
     batch.end();
   }
 
   private void renderPac(Entity pac) {
+    //define draw data.
     Vector2 dir = pac.getVel().nor();
     float intervalSpeed = 0.25f;
     float drawW = 1.5f;
     float drawH = 1.5f;
+
+    //shrink pac as he dies
+    if (game.pacDying()) {
+      drawW -= game.getDiedTime();
+      drawH -= game.getDiedTime();
+      if (drawW < 0f) drawW = 0f;
+      if (drawH < 0f) drawH = 0f;
+    }
+
+    //center the drawing.
     float drawX = pac.getPos().x - (drawW - 1f) / 2;
     float drawY = pac.getPos().y - (drawH - 1f) / 2;
+
+    //find index based on entities state time.
     int index = (int) (pac.getStateTime() / intervalSpeed);
+
+    //use direction to determine which sprites to draw.
     if (dir.x == 0 && dir.y == 1 && pacUpSprites != null) {
       index %= pacUpSprites.length;
       batch.draw(pacUpSprites[index], drawX, drawY, drawW, drawH);
@@ -420,6 +464,10 @@ public class MyGame extends Game {
   public void dispose() {
     super.dispose();
     if (batch != null) batch.dispose();
+    if (pacSpriteSheet != null) pacSpriteSheet.dispose();
+    if (candySprite != null) candySprite.dispose();
+    if (superCandySprite != null) superCandySprite.dispose();
+    if (readySprite != null) readySprite.dispose();
     if (pacSpriteSheet != null) pacSpriteSheet.dispose();
     if (blinkySpriteSheet != null) blinkySpriteSheet.dispose();
     if (pinkySpriteSheet != null) pinkySpriteSheet.dispose();
