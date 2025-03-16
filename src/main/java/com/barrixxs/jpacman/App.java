@@ -1,4 +1,4 @@
-package com.kusa;
+package com.barrixxs.jpacman;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
@@ -62,10 +62,32 @@ public class App {
      * You may also need to configure GPU drivers to fully disable Vsync; this can cause screen tearing.
      */
 
+    /*
+     * Add this code back when we fix forcing frame rate.
     configuration.useVsync(true);
     configuration.setForegroundFPS(
       Lwjgl3ApplicationConfiguration.getDisplayMode().refreshRate + 1
     );
+    */
+
+    //TODO COLLISION LOGIC + FRAMERATE
+    /*
+     * Basically if i use a higher fps than 60,
+     * my ghosts logic no longer works like expected.
+     *
+     * I beleive it's because of how I incorporate the delta
+     * value in my physics logic inside Ghost.java
+     *
+     * Until I can come up with a solution to this (im thinking
+     * seperating the physics simulation into a fixed time step) I have
+     * to forcefully set the fps here to 60, if for some reason you can't
+     * reach 60 fps the game still behaves fine with lower fps. (~30)
+     *
+     * You can set the fps to 144 here and see the ghost logic crumble (useful
+     *  to try and debug it).
+     */
+    configuration.useVsync(false);
+    configuration.setForegroundFPS(60);
 
     //Set windowed mode and dimensions.
     configuration.setWindowedMode(640, 480);

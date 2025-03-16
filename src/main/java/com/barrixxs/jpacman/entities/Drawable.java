@@ -1,4 +1,4 @@
-package com.kusa.entities;
+package com.barrixxs.jpacman.entities;
 
 import com.badlogic.gdx.graphics.g2d.Batch;
 

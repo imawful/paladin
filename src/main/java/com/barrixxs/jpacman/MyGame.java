@@ -1,4 +1,4 @@
-package com.kusa;
+package com.barrixxs.jpacman;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -15,11 +15,11 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.kusa.entities.Entity;
-import com.kusa.entities.Ghost;
-import com.kusa.entities.Ghost.GhostState;
-import com.kusa.entities.Pac;
-import com.kusa.entities.TileMapMaze;
+import com.barrixxs.jpacman.entities.Entity;
+import com.barrixxs.jpacman.entities.Ghost;
+import com.barrixxs.jpacman.entities.Ghost.GhostState;
+import com.barrixxs.jpacman.entities.Pac;
+import com.barrixxs.jpacman.entities.TileMapMaze;
 
 public class MyGame extends Game {
 

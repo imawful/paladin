@@ -1,4 +1,4 @@
-package com.kusa;
+package com.barrixxs.jpacman;
 
 public class LevelData {
 

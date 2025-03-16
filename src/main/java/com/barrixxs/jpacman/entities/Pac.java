@@ -1,4 +1,4 @@
-package com.kusa.entities;
+package com.barrixxs.jpacman.entities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
@@ -7,7 +7,7 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.kusa.util.Point;
+import com.barrixxs.jpacman.util.Point;
 
 public class Pac extends Entity implements Inputable {
 
@@ -45,6 +45,13 @@ public class Pac extends Entity implements Inputable {
     if (Gdx.input.isKeyPressed(Keys.A)) nextPos.set(-1f, 0f);
 
     if (Gdx.input.isKeyPressed(Keys.D)) nextPos.set(1f, 0f);
+
+    //debug
+    if (Gdx.input.isKeyPressed(Keys.P))
+    {
+
+      System.out.printf("POS: %s\nVEL: %s\n", pos.toString(), vel.toString());
+    }
   }
 
   /**
@@ -59,12 +66,11 @@ public class Pac extends Entity implements Inputable {
   public void logic(float delta) {
     stateTime += delta;
 
-    if (canSnap(0.05f)) pos.set(snap(pos));
-
     boolean isNewVelocity = !vel.cpy().nor().epsilonEquals(nextPos);
     boolean wontHitWall = !maze.overlapsWall(
-      pos.cpy().add(nextPos.cpy().scl(speed * delta))
+      snap(pos).add(nextPos.cpy().scl(speed * delta))
     );
+
     if (isNewVelocity && wontHitWall) {
       vel.set(nextPos.cpy().scl(speed));
       stateTime = 0f;
@@ -73,6 +79,7 @@ public class Pac extends Entity implements Inputable {
     pos.add(vel.cpy().scl(delta));
     if (maze.overlapsWall(pos)) {
       pos.set(snap(pos));
+      //pos.lerp(snap(pos), 0.9f);
       vel.set(0f, 0f);
     }
   }

@@ -1,4 +1,4 @@
-package com.kusa.entities;
+package com.barrixxs.jpacman.entities;
 
 public interface Inputable {
   void input();

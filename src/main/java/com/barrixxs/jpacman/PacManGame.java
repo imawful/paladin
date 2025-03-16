@@ -1,4 +1,4 @@
-package com.kusa;
+package com.barrixxs.jpacman;
 
 import com.badlogic.gdx.Audio;
 import com.badlogic.gdx.Gdx;
@@ -6,11 +6,11 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.kusa.entities.Entity;
-import com.kusa.entities.Ghost;
-import com.kusa.entities.Ghost.GhostState;
-import com.kusa.entities.Maze;
-import com.kusa.entities.Pac;
+import com.barrixxs.jpacman.entities.Entity;
+import com.barrixxs.jpacman.entities.Ghost;
+import com.barrixxs.jpacman.entities.Ghost.GhostState;
+import com.barrixxs.jpacman.entities.Maze;
+import com.barrixxs.jpacman.entities.Pac;
 
 public class PacManGame {
 
@@ -277,7 +277,7 @@ public class PacManGame {
     //ghost state here including their
     //target.
     boolean ghostLeaving = false; //used for making ghosts leave 1 at a time.
-    for (int i = 0; i < ghosts.length; i++) {
+    for (int i = 0; i < 1/*ghosts.length*/; i++) {
       Ghost ghost = ghosts[i];
 
       if (!pac.getVel().isZero()) ghost.setChaseTarget(getChaseTarget(i));

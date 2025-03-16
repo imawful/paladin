@@ -1,8 +1,8 @@
-package com.kusa;
+package com.barrixxs.jpacman;
 
-import com.kusa.entities.Ghost;
-import com.kusa.entities.Ghost.GhostState;
-import com.kusa.entities.Maze;
+import com.barrixxs.jpacman.entities.Ghost;
+import com.barrixxs.jpacman.entities.Ghost.GhostState;
+import com.barrixxs.jpacman.entities.Maze;
 
 public class GameState {
 

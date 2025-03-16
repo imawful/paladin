@@ -1,10 +1,10 @@
-package com.kusa.entities;
+package com.barrixxs.jpacman.entities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.kusa.util.Point;
+import com.barrixxs.jpacman.util.Point;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
