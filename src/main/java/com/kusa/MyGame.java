@@ -243,6 +243,12 @@ public class MyGame extends Game {
 
     final float delta = Gdx.graphics.getDeltaTime();
 
+    if(game.isGameOver())
+    {
+      Gdx.app.exit();
+      return;
+    }
+
     //maybe handle input somewhere else.
     //i mean like outside of game object.
     game.update(delta); // <--- makes an internal call to pac.input()
@@ -256,25 +262,6 @@ public class MyGame extends Game {
     //render maze
     mapRenderer.setView(camera);
     mapRenderer.render();
-
-    /*
-    shapeRenderer.setProjectionMatrix(camera.combined);
-    shapeRenderer.begin(ShapeType.Filled);
-
-    Vector2 pelletPosition = new Vector2();
-    for (int i = 0; i < 28; i++) {
-      for (int j = 0; j < 31; j++) {
-        shapeRenderer.setColor(Color.GOLD.mul(Color.WHITE));
-        if (maze.isCandy(i, j)) {
-          //shapeRenderer.ellipse(i + 0.3f, j + 0.2f, 0.5f, 0.5f);
-        }
-        shapeRenderer.setColor(Color.GOLDENROD.mul(Color.WHITE));
-        if (maze.isSuperCandy(i, j)) shapeRenderer.ellipse(i, j, 1.25f, 1.25f);
-      }
-    }
-
-    shapeRenderer.end();
-    */
 
     /* batch draw order
      * - pellets BOTTOM LAYER
