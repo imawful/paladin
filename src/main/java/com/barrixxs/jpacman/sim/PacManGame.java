@@ -277,7 +277,7 @@ public class PacManGame {
     //ghost state here including their
     //target.
     boolean ghostLeaving = false; //used for making ghosts leave 1 at a time.
-    for (int i = 0; i < 1/*ghosts.length*/; i++) {
+    for (int i = 0; i < ghosts.length; i++) {
       Ghost ghost = ghosts[i];
 
       if (!pac.getVel().isZero()) ghost.setChaseTarget(getChaseTarget(i));
