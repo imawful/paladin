@@ -15,6 +15,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.barrixxs.jpacman.sim.PacManGame;
 import com.barrixxs.jpacman.entities.Entity;
 import com.barrixxs.jpacman.entities.Ghost;
 import com.barrixxs.jpacman.entities.Ghost.GhostState;

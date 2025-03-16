@@ -1,4 +1,4 @@
-package com.barrixxs.jpacman;
+package com.barrixxs.jpacman.sim;
 
 import com.barrixxs.jpacman.entities.Ghost;
 import com.barrixxs.jpacman.entities.Ghost.GhostState;

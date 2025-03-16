@@ -1,4 +1,4 @@
-package com.barrixxs.jpacman;
+package com.barrixxs.jpacman.sim;
 
 import com.badlogic.gdx.Audio;
 import com.badlogic.gdx.Gdx;

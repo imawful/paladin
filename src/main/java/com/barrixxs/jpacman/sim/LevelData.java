@@ -1,4 +1,4 @@
-package com.barrixxs.jpacman;
+package com.barrixxs.jpacman.sim;
 
 public class LevelData {
 
