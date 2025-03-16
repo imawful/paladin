@@ -1,5 +1,6 @@
 # Introduction 
 Paladin is a Java based implementation of the classic arcade game Pac-Man utilizing LibGdx.
+![image](https://github.com/user-attachments/assets/9b822401-3e36-4cf0-a0cb-64e95f535403)
 
 # Installation
 
