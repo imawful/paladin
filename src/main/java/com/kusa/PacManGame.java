@@ -38,6 +38,12 @@ public class PacManGame {
   //holds state + level data.
   private GameState gameState;
 
+  //could potentially be moved to game state.
+  private boolean gameover;
+  private int lives;
+  private int candiesEaten;
+
+  //timers.
   private boolean died;
   private float diedTime;
   private float diedDuration;
@@ -100,6 +106,10 @@ public class PacManGame {
       0.8f
     );
 
+    lives = 3;
+    gameover = false;
+    candiesEaten = 0;
+
     died = false;
     diedTime = 0f;
     diedDuration = 2f;
@@ -144,10 +154,19 @@ public class PacManGame {
     return this.diedTime;
   }
 
+  public boolean isGameOver() { return this.gameover; }
+
   /**
    * General game simulation update.
    */
   public void update(float delta) {
+    if(gameover) return;
+
+    if (candiesEaten == maze.getInitialCandyCount()) {
+      gameover = true;
+      return;
+    }
+
     if (died) {
       if (pacChompID != -1) pacChomp.pause(pacChompID);
 
@@ -229,6 +248,12 @@ public class PacManGame {
   }
 
   private void pacHit() {
+    lives -= 1;
+    if(lives <= 0)
+    {
+      gameover = true;
+      return;
+    }
     pac.setPos(pac.getSpawn());
     pac.setVel(new Vector2(0f, 0f));
     pac.setStateTime(0f);
@@ -309,11 +334,16 @@ public class PacManGame {
 
   private void checkPacAteCandy() {
     //collision between pac and points.
-    if (maze.checkAndEatCandy(pac.getPos())) gameState.pacAteCandy();
+    if (maze.checkAndEatCandy(pac.getPos())) 
+    {
+      gameState.pacAteCandy();
+      candiesEaten++;
+    }
 
     if (maze.checkAndEatSuperCandy(pac.getPos())) {
       gameState.pacAteSuper();
       gameState.setFrightState();
+      candiesEaten++;
 
       //ghosts will take care of making sure
       //they will turn frightened only if possible
@@ -334,8 +364,9 @@ public class PacManGame {
           ateGhost = true;
         }
         else {
-          if(!ateGhost)
-            died = true; //pacHit();//System.out.println("GAME OVERR");
+          if(!ateGhost) {
+            died = true;
+          }
         }
       }
     }
