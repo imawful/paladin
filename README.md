@@ -7,7 +7,8 @@ Paladin is a Java based implementation of the classic arcade game Pac-Man utiliz
 ## Prerequisites
 
 The following are required to install and run the application.
-(for just running the final jar I beleive JRE 17 should be enough).
+
+(for just running the final jar I believe JRE 17 should be enough).
 
 - Maven 
 - Java 17
@@ -63,15 +64,23 @@ a maze based on a .tmx tiled map. This would allow for custom maps to be made an
 so that you can be able to play different levels and maybe set some settings. 
 
 [X] Maze Interface.
+
 [X] Create Level Data Builder. (build a level based on data)
+
 [X] 'Ready' before each session.
-[X] Sound Effects. 
-[X] Detect GameOver.
-[X] Level One
+
+[X] Sound Effects. (needs sound when in fright mode and maybe after a win)  
+
+[X] Detect GameOver. (right now we just force quit after game ends so I need to implement a flow).
+
+[X] Level One (easily loads a level into the simulation).
 
 [ ] Extra UI. (menus.. hud...)
+
 [ ] Maze builder (from tiled file).
+
 [ ] Numeric score.
+
 [ ] Fruits.
 
 
